@@ -24,7 +24,11 @@ function moveSlide(slideshowId, direction) {
   }
 
   function loadSlideImg(img) {
+    img.style.opacity = '0';
     img.src = img.dataset.src;
+    img.decode()
+      .then(() => { img.style.opacity = ''; })
+      .catch(() => { img.style.opacity = ''; });
   }
 
   const slideshowObserver = new IntersectionObserver((entries) => {
