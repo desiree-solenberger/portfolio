@@ -24,11 +24,7 @@ function moveSlide(slideshowId, direction) {
   }
 
   function loadSlideImg(img) {
-    img.style.opacity = '0';
     img.src = img.dataset.src;
-    img.decode()
-      .then(() => { img.style.opacity = ''; })
-      .catch(() => { img.style.opacity = ''; });
   }
 
   const slideshowObserver = new IntersectionObserver((entries) => {
@@ -38,7 +34,7 @@ function moveSlide(slideshowId, direction) {
         slideshowObserver.unobserve(entry.target);
       }
     });
-  }, { rootMargin: '600px' });
+  }, { rootMargin: '2000px' });
 
   document.querySelectorAll('.slideshow').forEach(s => slideshowObserver.observe(s));
 
