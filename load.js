@@ -7,14 +7,21 @@ videos.forEach(video => {
   }
 });
 
+const isMobile = window.matchMedia('(max-width: 650px)').matches;
+
 function loadVimeo(video) {
   if (video.dataset.loaded === 'true') return;
 
   const vimeoId = video.dataset.vimeoId;
+  // background=1 blocks autoplay on mobile — omit it and use playsinline instead
+  const params = isMobile
+    ? 'autoplay=1&muted=1&loop=1&controls=0&playsinline=1&autopause=0'
+    : 'autoplay=1&muted=1&loop=1&controls=0&background=1&playsinline=1';
 
   const iframe = document.createElement('iframe');
-  iframe.src = `https://player.vimeo.com/video/${vimeoId}?autoplay=1&muted=1&loop=1&controls=0&background=1`;
+  iframe.src = `https://player.vimeo.com/video/${vimeoId}?${params}`;
   iframe.allow = 'autoplay; fullscreen; picture-in-picture';
+  iframe.setAttribute('webkit-playsinline', '');
   iframe.loading = 'lazy';
   iframe.setAttribute('frameborder', '0');
   iframe.setAttribute('allowfullscreen', '');

@@ -15,9 +15,7 @@ function moveSlide(slideshowId, direction) {
     current = (current + direction + slides.length) % slides.length;
     slides[current].classList.add('active');
     // fallback: if observer hasn't fired yet, load this slide's image now
-    slides[current].querySelectorAll('img[data-src]:not([src])').forEach(img => {
-      img.src = img.dataset.src;
-    });
+    slides[current].querySelectorAll('img[data-src]:not([src])').forEach(loadSlideImg);
     const facade = slides[current].querySelector('.vimeo-facade');
     if (facade && typeof loadVimeo === 'function') loadVimeo(facade);
     const num = slideshowId.replace('slideshow-', '');
@@ -27,12 +25,19 @@ function moveSlide(slideshowId, direction) {
 
   // when a slideshow nears the viewport, set src on all slide images at once
   // (they start with data-src only so the browser never fetches them early)
+  function loadSlideImg(img) {
+    if (img.complete && img.naturalWidth) {
+      img.classList.add('img-loaded');
+    } else {
+      img.addEventListener('load', () => img.classList.add('img-loaded'), { once: true });
+    }
+    img.src = img.dataset.src;
+  }
+
   const slideshowObserver = new IntersectionObserver((entries) => {
     entries.forEach(entry => {
       if (entry.isIntersecting) {
-        entry.target.querySelectorAll('.slide img[data-src]:not([src])').forEach(img => {
-          img.src = img.dataset.src;
-        });
+        entry.target.querySelectorAll('.slide img[data-src]:not([src])').forEach(loadSlideImg);
         slideshowObserver.unobserve(entry.target);
       }
     });
