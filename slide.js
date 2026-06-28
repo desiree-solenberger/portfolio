@@ -23,20 +23,8 @@ function moveSlide(slideshowId, direction) {
     if (counter) counter.textContent = `${current + 1}/${slides.length}`;
   }
 
-  function markLoaded(img) {
-    if (img.complete && img.naturalWidth) {
-      img.classList.add('img-loaded');
-    } else {
-      img.addEventListener('load', () => img.classList.add('img-loaded'), { once: true });
-    }
-  }
-
-  // handle images that already have src (not lazy)
-  document.querySelectorAll('.slide img[src]').forEach(markLoaded);
-
   function loadSlideImg(img) {
     img.src = img.dataset.src;
-    markLoaded(img);
   }
 
   const slideshowObserver = new IntersectionObserver((entries) => {

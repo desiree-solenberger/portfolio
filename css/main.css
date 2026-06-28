@@ -489,15 +489,6 @@ h1 a {
   pointer-events: auto;
 }
 
-.slide img {
-  opacity: 0;
-  transition: opacity 0.2s ease;
-}
-
-.slide img.img-loaded {
-  opacity: 1;
-}
-
 .slide-arrow {
   display: none;
 }
