@@ -14,31 +14,14 @@ function loadVimeo(video) {
 
   const vimeoId = video.dataset.vimeoId;
 
-  if (isMobile) {
-    // iOS blocks iframe autoplay — show thumbnail, tap to open Vimeo player
-    video.style.cursor = 'pointer';
-    video.dataset.loaded = 'true';
-    video.addEventListener('click', () => {
-      const iframe = document.createElement('iframe');
-      iframe.src = `https://player.vimeo.com/video/${vimeoId}?autoplay=1&controls=1&playsinline=1`;
-      iframe.allow = 'autoplay; fullscreen; picture-in-picture';
-      iframe.setAttribute('webkit-playsinline', '');
-      iframe.setAttribute('frameborder', '0');
-      iframe.setAttribute('allowfullscreen', '');
-      iframe.style.position = 'absolute';
-      iframe.style.inset = '0';
-      iframe.style.width = '100%';
-      iframe.style.height = '100%';
-      video.appendChild(iframe);
-    }, { once: true });
-    return;
-  }
+  const params = isMobile
+    ? 'autoplay=1&muted=1&loop=1&controls=0&playsinline=1&autopause=0'
+    : 'autoplay=1&muted=1&loop=1&controls=0&background=1&playsinline=1';
 
   const iframe = document.createElement('iframe');
-  iframe.src = `https://player.vimeo.com/video/${vimeoId}?autoplay=1&muted=1&loop=1&controls=0&background=1&playsinline=1`;
+  iframe.src = `https://player.vimeo.com/video/${vimeoId}?${params}`;
   iframe.allow = 'autoplay; fullscreen; picture-in-picture';
   iframe.setAttribute('webkit-playsinline', '');
-  iframe.loading = 'lazy';
   iframe.setAttribute('frameborder', '0');
   iframe.setAttribute('allowfullscreen', '');
 
