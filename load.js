@@ -1,17 +1,18 @@
 const videos = document.querySelectorAll('[data-vimeo-id]');
 const isMobile = window.matchMedia('(max-width: 650px)').matches;
 
-videos.forEach(video => {
-  const thumb = video.dataset.thumb;
-  if (thumb) {
-    if (isMobile) {
-      const img = new Image();
-      img.onload = () => { video.style.backgroundImage = `url("${thumb}")`; };
-      img.src = thumb;
-    } else {
-      video.style.backgroundImage = `url("${thumb}")`;
+const thumbObserver = new IntersectionObserver((entries) => {
+  entries.forEach(entry => {
+    if (entry.isIntersecting) {
+      const thumb = entry.target.dataset.thumb;
+      if (thumb) entry.target.style.backgroundImage = `url("${thumb}")`;
+      thumbObserver.unobserve(entry.target);
     }
-  }
+  });
+}, { rootMargin: '2000px' });
+
+videos.forEach(video => {
+  if (video.dataset.thumb) thumbObserver.observe(video);
 });
 
 function loadVimeo(video) {
