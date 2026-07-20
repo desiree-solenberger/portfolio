@@ -244,6 +244,27 @@
         loadVimeoInSlide(e.currentSlide);
         preloadUpcomingSlides(e.currentSlide, 3);
       });
+
+      // click-to-navigate + arrow cursor, ported from the main site's slideshow nav
+      const revealEl = document.querySelector('.reveal');
+      const isLeftHalf = e => (e.clientX - revealEl.getBoundingClientRect().left) < revealEl.getBoundingClientRect().width / 2;
+
+      revealEl.addEventListener('mousemove', e => {
+        const left = isLeftHalf(e);
+        revealEl.classList.toggle('cursor-left', left);
+        revealEl.classList.toggle('cursor-right', !left);
+      });
+      revealEl.addEventListener('mouseleave', () => {
+        revealEl.classList.remove('cursor-left', 'cursor-right');
+      });
+      revealEl.addEventListener('click', e => {
+        if (e.target.closest('a')) return;
+        if (isLeftHalf(e)) {
+          Reveal.prev();
+        } else {
+          Reveal.next();
+        }
+      });
     </script>
   </body>
 </html>

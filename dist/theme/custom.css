@@ -266,3 +266,12 @@ iframe.grid-item {
   background: transparent;
 }
 
+/* slideshow-style arrow cursor, ported from the main site's .slideshow nav */
+.reveal.cursor-left {
+  cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='52' height='32'%3E%3Ctext y='26' font-size='28' fill='%234F4F4F'%3E%E2%9F%B5%3C/text%3E%3C/svg%3E") 20 12, w-resize;
+}
+
+.reveal.cursor-right {
+  cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='52' height='32'%3E%3Ctext y='26' font-size='28' fill='%234F4F4F'%3E%E2%9F%B6%3C/text%3E%3C/svg%3E") 20 12, e-resize;
+}
+
