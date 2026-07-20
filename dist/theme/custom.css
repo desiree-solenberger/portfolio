@@ -40,6 +40,19 @@
   padding: 0 !important;
 }
 
+/* the whole deck is clickable for slide navigation now, so kill the
+   default tap/focus highlight box and text-selection highlight
+   everywhere instead of just on links — a click with any tiny drag
+   (common on trackpads) otherwise triggers the browser's native blue
+   selection box over whatever's under the cursor, videos included */
+.reveal,
+.reveal * {
+  outline: none;
+  -webkit-tap-highlight-color: transparent;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
 .grid {
   display: grid;
   grid-template-columns: repeat(12, 1fr);
@@ -110,6 +123,8 @@ iframe.grid-item {
   overflow: hidden;
   min-width: 0;
   min-height: 0;
+  outline: none;
+  -webkit-tap-highlight-color: transparent;
 }
 
 .vimeo-item > iframe {
@@ -275,12 +290,21 @@ iframe.grid-item {
   cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='52' height='32'%3E%3Ctext y='26' font-size='28' fill='%234F4F4F'%3E%E2%9F%B6%3C/text%3E%3C/svg%3E") 20 12, e-resize;
 }
 
-/* force GPU-layer promotion so Safari re-rasterizes background images at
-   the deck's actual scaled-down size instead of leaving them soft */
-.reveal .slide-background {
-  -webkit-transform: translateZ(0);
-  transform: translateZ(0);
-  -webkit-backface-visibility: hidden;
-  backface-visibility: hidden;
+/* full-bleed slide image, rendered as a real <img> instead of a CSS
+   background-image — Safari's background-image scaling is noticeably
+   softer than its <img> scaling, even at identical source resolution */
+.reveal .slides section .slide-bg {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 1920px;
+  height: 1080px;
+  max-width: none !important;
+  max-height: none !important;
+  margin: 0 !important;
+  object-fit: contain;
+  pointer-events: none;
+  user-select: none;
+  -webkit-user-drag: none;
 }
 
