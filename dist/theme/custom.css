@@ -275,3 +275,12 @@ iframe.grid-item {
   cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='52' height='32'%3E%3Ctext y='26' font-size='28' fill='%234F4F4F'%3E%E2%9F%B6%3C/text%3E%3C/svg%3E") 20 12, e-resize;
 }
 
+/* force GPU-layer promotion so Safari re-rasterizes background images at
+   the deck's actual scaled-down size instead of leaving them soft */
+.reveal .slide-background {
+  -webkit-transform: translateZ(0);
+  transform: translateZ(0);
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
+}
+
