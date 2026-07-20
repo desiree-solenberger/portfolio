@@ -265,27 +265,34 @@
         if (img.decode) img.decode().catch(() => {});
       }
 
-      // load the videos and background image on the next `count` slides
-      // ahead of `slide`, so they're already loaded by the time the user gets there
+      // load the videos on the next `count` slides ahead of `slide`, so
+      // they're already loaded/playing by the time the user gets there.
+      // (background images aren't gated by proximity — see loadAllSlideBgs)
       function preloadUpcomingSlides(slide, count) {
         const slides = Reveal.getSlides();
         const current = slides.indexOf(slide);
         if (current === -1) return;
         for (let i = 1; i <= count && current + i < slides.length; i++) {
           loadVimeoInSlide(slides[current + i]);
-          loadSlideBg(slides[current + i]);
         }
+      }
+
+      // unlike the Vimeo embeds (autoplaying, so only a few are loaded at
+      // once), the slide images are static and cheap to hold decoded in
+      // memory — load & decode all of them right away so a fast click-through
+      // never outruns a proximity-based preload window
+      function loadAllSlideBgs() {
+        Reveal.getSlides().forEach(loadSlideBg);
       }
 
       Reveal.on('slidechanged', e => {
         loadVimeoInSlide(e.currentSlide);
-        loadSlideBg(e.currentSlide);
         preloadUpcomingSlides(e.currentSlide, 3);
       });
       Reveal.on('ready', e => {
         loadVimeoInSlide(e.currentSlide);
-        loadSlideBg(e.currentSlide);
         preloadUpcomingSlides(e.currentSlide, 3);
+        loadAllSlideBgs();
       });
 
       // click-to-navigate + arrow cursor, ported from the main site's slideshow nav
