@@ -53,13 +53,17 @@ function moveSlide(slideshowId, direction) {
   }
 
   function preloadSlideshowImages(slideshow) {
-    return Promise.all(Array.from(slideshow.querySelectorAll('.slide')).map(preloadSlideImages));
+    return Promise.all(Array.from(slideshow.querySelectorAll('.slide')).map(slide => {
+      primeVimeoThumbs(slide);
+      return preloadSlideImages(slide);
+    }));
   }
 
   function preloadNearbySlides(slideshow, current, distance = 2) {
     const slides = Array.from(slideshow.querySelectorAll('.slide'));
     for (let offset = -1; offset <= distance; offset++) {
       const index = (current + offset + slides.length) % slides.length;
+      primeVimeoThumbs(slides[index]);
       preloadSlideImages(slides[index]);
     }
   }
@@ -156,5 +160,6 @@ function moveSlide(slideshowId, direction) {
     if (isSafari) {
       const current = Array.from(slides).findIndex(s => s.classList.contains('active'));
       if (current !== -1) preloadNearbySlides(slideshow, current);
+      preloadSlideshowImages(slideshow);
     }
   });
