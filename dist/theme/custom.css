@@ -156,6 +156,10 @@ iframe.grid-item {
   pointer-events: none;
 }
 
+.vimeo-item.thumb-instant::before {
+  transition: none;
+}
+
 /* Bio header (ported from main site's .bio-container, minus the +/- toggle) */
 .reveal .bio-container {
   font-family: 'VT323', monospace;
@@ -307,4 +311,3 @@ iframe.grid-item {
   user-select: none;
   -webkit-user-drag: none;
 }
-

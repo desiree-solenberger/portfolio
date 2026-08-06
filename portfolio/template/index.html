@@ -211,10 +211,10 @@
       const safariImagePreloadAhead = 3;
       const safariVimeoPreloadAhead = 7;
       const safariLateVimeoFromSlide = 25;
-      const safariLateVimeoWarmStartSlide = 13;
-      const safariLateVimeoWarmStepMs = 650;
-      const safariLateVimeoReadyTimeoutMs = 2200;
-      const lateVimeoThumbnailFromSlide = 24;
+      const safariLateVimeoWarmStartSlide = 1;
+      const safariLateVimeoWarmStepMs = 350;
+      const safariVimeoReadyTimeoutMs = 2200;
+      const safariLateVimeoReadyTimeoutMs = 4000;
       let safariNavigationPending = false;
       let safariBackplate = null;
       let safariTransitionCover = null;
@@ -222,8 +222,7 @@
       let safariLateVimeoWarmStarted = false;
       const safariImageCache = new Map();
       const vimeoThumbCache = new Map();
-      const lateVimeoPlayers = new Map();
-      let lateVimeoLayer = null;
+      const vimeoReadyCache = new WeakMap();
 
       primeVimeoThumbs();
 
@@ -248,213 +247,49 @@
         iframe.style.setProperty('max-height', 'none', 'important');
       }
 
-      function getSlideIndex(slide) {
-        const slides = typeof Reveal.getSlides === 'function' && Reveal.getSlides().length
-          ? Reveal.getSlides()
-          : Array.from(document.querySelectorAll('.slides > section'));
-        return slides.indexOf(slide);
-      }
-
-      function isLateVimeoSlide(slide) {
-        const index = getSlideIndex(slide);
-        return index !== -1 && index >= lateVimeoThumbnailFromSlide - 1;
-      }
-
       function isPresentSlide(slide) {
         return slide && slide.classList.contains('present');
       }
 
-      function shouldHoldVimeoThumb(el) {
-        return isSafari && isLateVimeoSlide(el.closest('section'));
+      function isLateVimeoSlide(slide) {
+        if (!slide) return false;
+        const index = Reveal.getSlides().indexOf(slide);
+        return index !== -1 && index >= safariLateVimeoFromSlide - 1;
       }
 
-      function showVimeoThumbWhenPreloading(el) {
-        if (shouldHoldVimeoThumb(el) && !isPresentSlide(el.closest('section'))) {
-          el.classList.remove('thumb-hidden');
-        }
-      }
-
-      function hideVimeoThumbWhenVisible(el) {
-        const slide = el.closest('section');
-        el.dataset.vimeoReady = 'true';
-        if (shouldHoldVimeoThumb(el) && !isPresentSlide(slide)) {
-          el.classList.remove('thumb-hidden');
-          return;
-        }
-        const hide = () => {
-          if (!shouldHoldVimeoThumb(el) || isPresentSlide(slide)) {
-            el.classList.add('thumb-hidden');
-          }
-        };
-        shouldHoldVimeoThumb(el) ? waitForNextPaint(2).then(hide) : hide();
-      }
-
-      function ensureLateVimeoLayer() {
-        if (!isSafari) return null;
-        if (lateVimeoLayer) return lateVimeoLayer;
-        lateVimeoLayer = document.createElement('div');
-        lateVimeoLayer.setAttribute('aria-hidden', 'true');
-        Object.assign(lateVimeoLayer.style, {
-          position: 'absolute',
-          top: '0',
-          left: '0',
-          width: '1920px',
-          height: '1080px',
-          pointerEvents: 'none',
-          zIndex: '0',
-        });
-        document.querySelector('.slides').appendChild(lateVimeoLayer);
-        return lateVimeoLayer;
-      }
-
-      function getLateVimeoKey(el) {
-        if (!el.dataset.lateVimeoKey) {
-          const slide = el.closest('section');
-          const siblings = Array.from(slide.querySelectorAll('.vimeo-item[data-vimeo-id]'));
-          el.dataset.lateVimeoKey = `${getSlideIndex(slide)}:${siblings.indexOf(el)}:${el.dataset.vimeoId}`;
-        }
-        return el.dataset.lateVimeoKey;
-      }
-
-      function positionLateVimeoPlayer(record, visible = false) {
-        const placement = getGridPlacement(record.el);
-        if (!placement) return;
-        Object.assign(record.wrap.style, {
-          left: `${placement.x}px`,
-          top: `${placement.y}px`,
-          width: `${placement.width}px`,
-          height: `${placement.height}px`,
-          opacity: visible ? '1' : '0',
-          zIndex: visible ? '14' : '0',
-        });
-        record.iframe.style.setProperty('width', `${placement.height * 1.5}px`, 'important');
-        record.iframe.style.setProperty('height', `${placement.height}px`, 'important');
-      }
-
-      function markLateVimeoReady(record) {
-        if (record.ready) return;
-        record.ready = true;
-        record.el.dataset.vimeoReady = 'true';
-        record.resolveReady();
-        if (isPresentSlide(record.el.closest('section'))) {
-          activateLateVimeoPlayer(record.el);
-        }
-      }
-
-      function ensureLateVimeoPlayer(el) {
-        if (!shouldHoldVimeoThumb(el)) return null;
-        const key = getLateVimeoKey(el);
-        if (lateVimeoPlayers.has(key)) return lateVimeoPlayers.get(key);
-
-        const layer = ensureLateVimeoLayer();
-        if (!layer) return null;
-
-        const wrap = document.createElement('div');
-        Object.assign(wrap.style, {
-          position: 'absolute',
-          overflow: 'hidden',
-          pointerEvents: 'none',
-          opacity: '0.001',
-          zIndex: '0',
-        });
-
-        const iframe = document.createElement('iframe');
-        iframe.src = `https://player.vimeo.com/video/${el.dataset.vimeoId}?autoplay=1&muted=1&loop=1&controls=0&background=1&playsinline=1&autopause=0`;
-        iframe.allow = 'autoplay; fullscreen; picture-in-picture';
-        iframe.setAttribute('frameborder', '0');
-        iframe.tabIndex = -1;
-        Object.assign(iframe.style, {
-          position: 'absolute',
-          top: '50%',
-          left: '50%',
-          transform: 'translate(-50%, -50%)',
-          maxWidth: 'none',
-          maxHeight: 'none',
-          border: '0',
-          pointerEvents: 'none',
-        });
-
+      function getVimeoReadyRecord(el) {
+        if (vimeoReadyCache.has(el)) return vimeoReadyCache.get(el);
         let resolveReady;
         const readyPromise = new Promise(resolve => { resolveReady = resolve; });
-        const record = { el, wrap, iframe, ready: false, readyPromise, resolveReady };
-        lateVimeoPlayers.set(key, record);
-        wrap.appendChild(iframe);
-        layer.appendChild(wrap);
-        positionLateVimeoPlayer(record, false);
-
-        const onMessage = (e) => {
-          if (e.source !== iframe.contentWindow) return;
-          try {
-            const data = JSON.parse(e.data);
-            if (data.event === 'ready') {
-              iframe.contentWindow.postMessage(
-                JSON.stringify({ method: 'addEventListener', value: 'play' }), '*'
-              );
-              iframe.contentWindow.postMessage(JSON.stringify({ method: 'play' }), '*');
-            }
-            if (data.event === 'play') {
-              markLateVimeoReady(record);
-              window.removeEventListener('message', onMessage);
-            }
-          } catch {}
-        };
-
-        window.addEventListener('message', onMessage);
-        iframe.addEventListener('load', () => {
-          iframe.contentWindow.postMessage(JSON.stringify({ method: 'play' }), '*');
-          window.setTimeout(() => {
-            markLateVimeoReady(record);
-            window.removeEventListener('message', onMessage);
-          }, 4000);
-        }, { once: true });
-
+        const record = { ready: false, readyPromise, resolveReady };
+        vimeoReadyCache.set(el, record);
         return record;
       }
 
-      function activateLateVimeoPlayer(el) {
-        const record = ensureLateVimeoPlayer(el);
-        if (!record) return;
-        positionLateVimeoPlayer(record, record.ready);
-        record.iframe.contentWindow.postMessage(JSON.stringify({ method: 'play' }), '*');
-        if (record.ready) {
-          waitForNextPaint(2).then(() => {
-            if (isPresentSlide(el.closest('section'))) {
-              el.classList.add('thumb-hidden');
-              positionLateVimeoPlayer(record, true);
-            }
-          });
-        } else {
-          el.classList.remove('thumb-hidden');
+      function showVimeoThumb(el) {
+        el.classList.remove('thumb-hidden');
+      }
+
+      function hideVimeoThumb(el) {
+        if (isSafari) el.classList.add('thumb-instant');
+        el.classList.add('thumb-hidden');
+      }
+
+      function markVimeoReady(el) {
+        const record = getVimeoReadyRecord(el);
+        if (!record.ready) {
+          record.ready = true;
+          el.dataset.vimeoReady = 'true';
+          record.resolveReady();
         }
-      }
-
-      function showLateVimeoPlayersForSlide(slide) {
-        if (!isSafari) return;
-        const hasLateVideo = slide && Array.from(slide.querySelectorAll('.vimeo-item[data-vimeo-id]'))
-          .some(shouldHoldVimeoThumb);
-        if (hasLateVideo) ensureLateVimeoLayer();
-        if (lateVimeoLayer) lateVimeoLayer.style.zIndex = hasLateVideo ? '14' : '0';
-        lateVimeoPlayers.forEach(record => {
-          if (record.el.closest('section') !== slide) {
-            positionLateVimeoPlayer(record, false);
-          }
-        });
-        if (!slide) return;
-        slide.querySelectorAll('.vimeo-item[data-vimeo-id]').forEach(el => {
-          if (shouldHoldVimeoThumb(el)) activateLateVimeoPlayer(el);
-        });
-      }
-
-      function waitForLateVimeoPlayers(slide) {
-        if (!isSafari || !isLateVimeoSlide(slide)) return Promise.resolve();
-        const records = Array.from(slide.querySelectorAll('.vimeo-item[data-vimeo-id]'))
-          .map(ensureLateVimeoPlayer)
-          .filter(Boolean);
-        if (!records.length) return Promise.resolve();
-        return Promise.race([
-          Promise.all(records.map(record => record.readyPromise)),
-          new Promise(resolve => window.setTimeout(resolve, safariLateVimeoReadyTimeoutMs))
-        ]).then(() => {});
+        const slide = el.closest('section');
+        if (isSafari && isPresentSlide(slide)) {
+          waitForNextPaint(2).then(() => {
+            if (isPresentSlide(slide)) hideVimeoThumb(el);
+          });
+          return;
+        }
+        hideVimeoThumb(el);
       }
 
       function loadVimeoInSlide(slide) {
@@ -463,26 +298,24 @@
           if (el.dataset.thumb) {
             el.style.setProperty('--thumb', `url("${el.dataset.thumb}")`);
           }
-          showVimeoThumbWhenPreloading(el);
-
-          if (shouldHoldVimeoThumb(el)) {
-            ensureLateVimeoPlayer(el);
-            if (isPresentSlide(slide)) activateLateVimeoPlayer(el);
-            return;
-          }
+          const record = getVimeoReadyRecord(el);
+          if (isSafari && !record.ready) showVimeoThumb(el);
 
           let iframe = el.querySelector('iframe');
           if (!iframe) {
             iframe = document.createElement('iframe');
-            iframe.src = `https://player.vimeo.com/video/${el.dataset.vimeoId}?autoplay=1&muted=1&loop=1&controls=0&background=1`;
+            const params = isSafari
+              ? 'autoplay=1&muted=1&loop=1&controls=0&background=1&playsinline=1&autopause=0'
+              : 'autoplay=1&muted=1&loop=1&controls=0&background=1';
+            iframe.src = `https://player.vimeo.com/video/${el.dataset.vimeoId}?${params}`;
             iframe.allow = 'autoplay; fullscreen; picture-in-picture';
             iframe.setAttribute('frameborder', '0');
+            if (isSafari) iframe.loading = 'eager';
             iframe.style.top = '50%';
             iframe.style.left = '50%';
             iframe.style.transform = 'translate(-50%, -50%)';
             el.appendChild(iframe);
 
-            const show = () => { hideVimeoThumbWhenVisible(el); };
             const onMessage = (e) => {
               if (e.source !== iframe.contentWindow) return;
               try {
@@ -491,21 +324,60 @@
                   iframe.contentWindow.postMessage(
                     JSON.stringify({ method: 'addEventListener', value: 'play' }), '*'
                   );
+                  iframe.contentWindow.postMessage(JSON.stringify({ method: 'play' }), '*');
                 }
                 if (data.event === 'play') {
-                  show();
+                  markVimeoReady(el);
                   window.removeEventListener('message', onMessage);
                 }
               } catch {}
             };
             window.addEventListener('message', onMessage);
-            setTimeout(() => { show(); window.removeEventListener('message', onMessage); }, 4000);
+            iframe.addEventListener('load', () => {
+              iframe.contentWindow.postMessage(JSON.stringify({ method: 'play' }), '*');
+            }, { once: true });
+            if (!isSafari) {
+              setTimeout(() => {
+                markVimeoReady(el);
+                window.removeEventListener('message', onMessage);
+              }, 4000);
+            }
+          } else if (record.ready) {
+            markVimeoReady(el);
+            // Vimeo's own background/loop player pauses itself once it
+            // scrolls out of view — revisiting a slide (esp. navigating
+            // backward past it) needs an explicit nudge to resume, since
+            // "already ready" alone doesn't mean "still playing".
+            if (isSafari && isPresentSlide(slide)) {
+              iframe.contentWindow.postMessage(JSON.stringify({ method: 'play' }), '*');
+            }
+          } else if (isSafari && isPresentSlide(slide)) {
+            iframe.contentWindow.postMessage(JSON.stringify({ method: 'play' }), '*');
           }
 
           // (re)apply sizing every time this slide is loaded/revisited, in
           // case it was previously preloaded while hidden and measured 0.
           resizeVimeoIframe(el, iframe);
         });
+      }
+
+      function waitForVimeoInSlide(slide) {
+        if (!isSafari || !slide) return Promise.resolve();
+        const items = Array.from(slide.querySelectorAll('.vimeo-item[data-vimeo-id]'));
+        if (!items.length) return Promise.resolve();
+        loadVimeoInSlide(slide);
+        const thumbPromises = items
+          .filter(el => el.dataset.thumb)
+          .map(el => getVimeoThumbRecord(el.dataset.thumb).ready);
+        const videoPromises = items.map(el => getVimeoReadyRecord(el).readyPromise);
+        // Late slides tend to still be mid-flight when their warm-up window
+        // has been shorter, so give them more patience to finish loading
+        // before the swap reveals them, rather than showing a bare thumb.
+        const timeoutMs = isLateVimeoSlide(slide) ? safariLateVimeoReadyTimeoutMs : safariVimeoReadyTimeoutMs;
+        return Promise.race([
+          Promise.all([...thumbPromises, ...videoPromises]),
+          new Promise(resolve => window.setTimeout(resolve, timeoutMs))
+        ]).then(() => {});
       }
 
       function primeVimeoThumbs() {
@@ -671,30 +543,6 @@
         return safariTransitionCover;
       }
 
-      function getGridPlacement(el) {
-        const column = (el.style.gridColumn || '').match(/(\d+)\s*\/\s*(\d+)/);
-        const row = (el.style.gridRow || '').match(/(\d+)\s*\/\s*(\d+)/);
-        if (!column || !row) return null;
-        const padding = 10;
-        const gap = 7;
-        const columns = 12;
-        const rows = 12;
-        const trackWidth = (1920 - (padding * 2) - (gap * (columns - 1))) / columns;
-        const trackHeight = (1080 - (padding * 2) - (gap * (rows - 1))) / rows;
-        const startColumn = Number(column[1]);
-        const endColumn = Number(column[2]);
-        const startRow = Number(row[1]);
-        const endRow = Number(row[2]);
-        const spanColumns = endColumn - startColumn;
-        const spanRows = endRow - startRow;
-        return {
-          x: padding + ((startColumn - 1) * (trackWidth + gap)),
-          y: padding + ((startRow - 1) * (trackHeight + gap)),
-          width: (spanColumns * trackWidth) + ((spanColumns - 1) * gap),
-          height: (spanRows * trackHeight) + ((spanRows - 1) * gap),
-        };
-      }
-
       function paintSafariLayer(layer, source) {
         if (!isSafari || !layer || !source) return Promise.resolve();
         const record = getSafariImageRecord(source);
@@ -793,7 +641,7 @@
         });
         lateVideos.forEach((el, index) => {
           window.setTimeout(() => {
-            ensureLateVimeoPlayer(el);
+            loadVimeoInSlide(el.closest('section'));
           }, index * safariLateVimeoWarmStepMs);
         });
       }
@@ -851,10 +699,10 @@
         if (!target || safariNavigationPending) return;
         const cover = usesSafariTransitionCover(target);
         safariNavigationPending = true;
-        waitForSlideImage(target, cover).then(() => waitForLateVimeoPlayers(target)).then(() => {
+        waitForSlideImage(target, cover).then(() => waitForVimeoInSlide(target)).then(() => {
           if (!cover) hideSafariTransitionCoverNow();
           direction < 0 ? Reveal.prev() : Reveal.next();
-          showLateVimeoPlayersForSlide(Reveal.getCurrentSlide());
+          loadVimeoInSlide(Reveal.getCurrentSlide());
           if (cover) hideSafariTransitionCoverAfterSwap();
         }).finally(() => {
           safariNavigationPending = false;
@@ -867,7 +715,6 @@
         maybeWarmLateVimeoConnections(e.currentSlide);
         preloadSafariNearbySlideBgs(e.currentSlide);
         setSafariBackplate(e.currentSlide);
-        showLateVimeoPlayersForSlide(e.currentSlide);
       });
       Reveal.on('ready', e => {
         loadVimeoInSlide(e.currentSlide);
@@ -875,7 +722,6 @@
         maybeWarmLateVimeoConnections(e.currentSlide);
         loadAllSlideBgs();
         setSafariBackplate(e.currentSlide);
-        showLateVimeoPlayersForSlide(e.currentSlide);
       });
 
       // click-to-navigate + arrow cursor, ported from the main site's slideshow nav
