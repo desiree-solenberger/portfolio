@@ -501,6 +501,52 @@ h1 a {
   cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='52' height='32'%3E%3Ctext y='26' font-size='28' fill='%234F4F4F'%3E%E2%9F%B6%3C/text%3E%3C/svg%3E") 20 12, e-resize;
 }
 
+html.is-safari .slideshow {
+  aspect-ratio: 3 / 2;
+  height: auto;
+  overflow: hidden;
+  isolation: isolate;
+  contain: layout paint;
+  line-height: 0;
+  transform: translateZ(0);
+  -webkit-transform: translateZ(0);
+}
+
+html.is-safari .slideshow .slide.active {
+  position: absolute;
+  inset: 0;
+  z-index: 10;
+}
+
+html.is-safari .slideshow .slide.safari-slide-hold {
+  position: absolute;
+  inset: 0;
+  opacity: 1;
+  pointer-events: none;
+  z-index: 20;
+}
+
+html.is-safari .slideshow .slide,
+html.is-safari .slideshow img,
+html.is-safari .slideshow .video-wrapper,
+html.is-safari .slideshow iframe {
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+}
+
+html.is-safari .slideshow img,
+html.is-safari .slideshow .video-wrapper {
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  object-fit: contain;
+  object-position: top center;
+}
+
+html.is-safari .slideshow .video-wrapper {
+  aspect-ratio: auto;
+}
+
 /* img scrolls */
 .img-scroll {
   grid-column: 3 / 6;

@@ -8,6 +8,11 @@
   <link rel="icon" type="image/png" href="imgs/favicon.png" />
   <link rel="icon" type="image/png" sizes="512x512" href="imgs/favicon-512.png" />
   <link rel="apple-touch-icon" href="imgs/apple-touch-icon.png" />
+  <script>
+    if (/^((?!chrome|android|crios|fxios|edgios).)*safari/i.test(navigator.userAgent)) {
+      document.documentElement.classList.add('is-safari');
+    }
+  </script>
   <link rel="stylesheet" type="text/css" href="css/main.css" />
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
