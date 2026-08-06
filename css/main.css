@@ -518,11 +518,11 @@ html.is-safari .slideshow .slide.active {
   z-index: 10;
 }
 
-html.is-safari .slideshow .slide.safari-slide-hold {
+html.is-safari .slideshow .slide.safari-slide-entering {
   position: absolute;
   inset: 0;
   opacity: 1;
-  pointer-events: none;
+  pointer-events: auto;
   z-index: 20;
 }
 

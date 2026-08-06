@@ -10,8 +10,6 @@ document.querySelectorAll('.desc-toggle').forEach(toggle => {
 const isSafari = /^((?!chrome|android|crios|fxios|edgios).)*safari/i.test(navigator.userAgent);
 if (isSafari) document.documentElement.classList.add('is-safari');
 const safariSlideLocks = new WeakSet();
-const safariHoldTimers = new WeakMap();
-const safariCoverHoldMs = 160;
 
 function moveSlide(slideshowId, direction) {
     const slideshow = document.getElementById(slideshowId);
@@ -93,36 +91,25 @@ function moveSlide(slideshowId, direction) {
 
   async function moveSlideSafari(slideshow, slides, current, next) {
     if (safariSlideLocks.has(slideshow)) return;
+    if (current === -1 || current === next) return;
     safariSlideLocks.add(slideshow);
     try {
       const previousSlide = slides[current];
       const nextSlide = slides[next];
-      holdSafariSlide(previousSlide);
       await preloadSlideImages(nextSlide);
       primeVimeoThumbs(nextSlide);
-      showSlide(slideshow, slides, current, next);
+      nextSlide.classList.add('active', 'safari-slide-entering');
+      nextSlide.querySelectorAll('img[data-src]:not([src])').forEach(loadSlideImg);
+      const facade = nextSlide.querySelector('.vimeo-facade');
+      if (facade && typeof loadVimeo === 'function') loadVimeo(facade);
+      updateCounter(slideshow, next, slides.length);
       preloadNearbySlides(slideshow, next);
-      await waitForNextPaint(3);
-      safariHoldTimers.set(
-        previousSlide,
-        window.setTimeout(() => releaseSafariSlide(previousSlide), safariCoverHoldMs)
-      );
+      await waitForNextPaint(2);
+      previousSlide.classList.remove('active');
+      nextSlide.classList.remove('safari-slide-entering');
     } finally {
       safariSlideLocks.delete(slideshow);
     }
-  }
-
-  function holdSafariSlide(slide) {
-    if (!slide) return;
-    window.clearTimeout(safariHoldTimers.get(slide));
-    slide.classList.add('safari-slide-hold');
-  }
-
-  function releaseSafariSlide(slide) {
-    if (!slide) return;
-    window.clearTimeout(safariHoldTimers.get(slide));
-    safariHoldTimers.delete(slide);
-    slide.classList.remove('safari-slide-hold');
   }
 
   function waitForNextPaint(frames = 2) {
