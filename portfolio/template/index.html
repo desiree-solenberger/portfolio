@@ -186,7 +186,8 @@
 
     <script src="../../dist/reveal.js"></script>
     <script>
-      Reveal.initialize({
+      const isSafari = /^((?!chrome|android|crios|fxios|edgios).)*safari/i.test(navigator.userAgent);
+      const revealConfig = {
         width: 1920,
         height: 1080,
         margin: 0,
@@ -197,7 +198,35 @@
         transition: 'none',
         backgroundTransition: 'none',
         autoPlayMedia: true,
-      });
+      };
+
+      if (!isSafari) {
+        Reveal.initialize(revealConfig);
+      }
+
+      const safariBackplateWarmupFrames = 4;
+      const safariCoverFromSlide = 11;
+      const safariCoverHoldMs = 700;
+      const safariEagerImageThroughSlide = 23;
+      const safariImagePreloadAhead = 3;
+      const safariVimeoPreloadAhead = 3;
+      const safariLateVimeoFromSlide = 25;
+      const safariLateVimeoWarmStartSlide = 13;
+      const safariLateVimeoWarmStepMs = 650;
+      let safariNavigationPending = false;
+      let safariBackplate = null;
+      let safariTransitionCover = null;
+      let safariTransitionCoverHideTimer = 0;
+      let safariLateVimeoWarmStarted = false;
+      const safariImageCache = new Map();
+
+      if (isSafari) {
+        document.querySelectorAll('img.slide-bg').forEach(img => {
+          const source = img.getAttribute('src') || img.getAttribute('data-src');
+          if (source) img.dataset.safariSrc = source;
+        });
+        primeVimeoThumbs();
+      }
 
       function resizeVimeoIframe(el, iframe) {
         // reveal.js hides non-active slides with display:none, which makes
@@ -216,12 +245,12 @@
       function loadVimeoInSlide(slide) {
         if (!slide) return;
         slide.querySelectorAll('.vimeo-item[data-vimeo-id]').forEach(el => {
+          if (el.dataset.thumb) {
+            el.style.setProperty('--thumb', `url("${el.dataset.thumb}")`);
+          }
+
           let iframe = el.querySelector('iframe');
           if (!iframe) {
-            if (el.dataset.thumb) {
-              el.style.setProperty('--thumb', `url("${el.dataset.thumb}")`);
-            }
-
             iframe = document.createElement('iframe');
             iframe.src = `https://player.vimeo.com/video/${el.dataset.vimeoId}?autoplay=1&muted=1&loop=1&controls=0&background=1`;
             iframe.allow = 'autoplay; fullscreen; picture-in-picture';
@@ -257,15 +286,218 @@
         });
       }
 
+      function primeVimeoThumbs() {
+        document.querySelectorAll('.vimeo-item[data-thumb]').forEach(el => {
+          el.style.setProperty('--thumb', `url("${el.dataset.thumb}")`);
+          const image = new Image();
+          image.src = el.dataset.thumb;
+        });
+      }
+
       function loadSlideBg(slide) {
         if (!slide) return;
-        const img = slide.querySelector('img.slide-bg[data-src]:not([src])');
+        const img = slide.querySelector('img.slide-bg');
         if (!img) return;
-        img.src = img.dataset.src;
+        const source = isSafari ? img.dataset.safariSrc : img.dataset.src;
+        if (!source) return;
+        if (isSafari && img.dataset.safariDecoded === source && img.complete && img.naturalWidth) {
+          return;
+        }
+        if (isSafari) {
+          img.setAttribute('loading', 'eager');
+          img.setAttribute('decoding', 'sync');
+          img.setAttribute('fetchpriority', 'high');
+          img.style.objectFit = 'fill';
+          preloadSafariImageSource(source);
+        }
+        if (!img.getAttribute('src')) {
+          img.src = source;
+        }
+        if (isSafari) {
+          img.removeAttribute('data-src');
+          img.removeAttribute('data-lazy-loaded');
+        }
         // Safari can defer fully decoding a large image until the instant
         // it's painted, causing a pop/flash even after it's downloaded;
         // forcing decode() now while the slide is still offscreen avoids that.
-        if (img.decode) img.decode().catch(() => {});
+        const decoded = decodeSlideImage(img);
+        if (isSafari) {
+          decoded.then(() => {
+            if (img.complete && img.naturalWidth) img.dataset.safariDecoded = source;
+          });
+        }
+      }
+
+      function decodeSlideImage(img) {
+        if (!img) return Promise.resolve();
+        const loaded = img.complete && img.naturalWidth
+          ? Promise.resolve()
+          : new Promise(resolve => {
+              img.addEventListener('load', resolve, { once: true });
+              img.addEventListener('error', resolve, { once: true });
+            });
+        return loaded.then(() => img.decode ? img.decode().catch(() => {}) : undefined);
+      }
+
+      function preloadSafariImageSource(source) {
+        if (!isSafari || !source) return Promise.resolve();
+        return getSafariImageRecord(source).ready;
+      }
+
+      function getSafariImageRecord(source) {
+        if (!safariImageCache.has(source)) {
+          const image = new Image();
+          image.loading = 'eager';
+          image.decoding = 'sync';
+          image.fetchPriority = 'high';
+          const ready = decodeSlideImage(image);
+          image.src = source;
+          safariImageCache.set(source, { image, ready });
+        }
+        return safariImageCache.get(source);
+      }
+
+      function waitForNextPaint(frames = 2) {
+        return new Promise(resolve => {
+          const step = () => {
+            frames -= 1;
+            if (frames <= 0) {
+              resolve();
+            } else {
+              requestAnimationFrame(step);
+            }
+          };
+          requestAnimationFrame(step);
+        });
+      }
+
+      function getSafariSlideSource(slide) {
+        const img = slide && slide.querySelector('img.slide-bg');
+        return img && (img.dataset.safariSrc || img.getAttribute('src') || img.getAttribute('data-src'));
+      }
+
+      function ensureSafariBackplate() {
+        if (!isSafari) return null;
+        if (safariBackplate) return safariBackplate;
+        safariBackplate = document.createElement('canvas');
+        safariBackplate.setAttribute('aria-hidden', 'true');
+        Object.assign(safariBackplate.style, {
+          position: 'absolute',
+          display: 'block',
+          top: '0',
+          left: '0',
+          width: '1920px',
+          height: '1080px',
+          maxWidth: 'none',
+          maxHeight: 'none',
+          margin: '0',
+          objectFit: 'fill',
+          pointerEvents: 'none',
+          userSelect: 'none',
+          WebkitUserDrag: 'none',
+          transform: 'none',
+          WebkitTransform: 'none',
+          backfaceVisibility: 'hidden',
+          WebkitBackfaceVisibility: 'hidden',
+          opacity: '1',
+          visibility: 'visible',
+          zIndex: '1',
+        });
+        document.querySelector('.slides').appendChild(safariBackplate);
+        return safariBackplate;
+      }
+
+      function ensureSafariTransitionCover() {
+        if (!isSafari) return null;
+        if (safariTransitionCover) return safariTransitionCover;
+        safariTransitionCover = document.createElement('canvas');
+        safariTransitionCover.setAttribute('aria-hidden', 'true');
+        Object.assign(safariTransitionCover.style, {
+          position: 'absolute',
+          display: 'block',
+          top: '0',
+          left: '0',
+          width: '1920px',
+          height: '1080px',
+          maxWidth: 'none',
+          maxHeight: 'none',
+          margin: '0',
+          objectFit: 'fill',
+          pointerEvents: 'none',
+          userSelect: 'none',
+          WebkitUserDrag: 'none',
+          transform: 'none',
+          WebkitTransform: 'none',
+          backfaceVisibility: 'hidden',
+          WebkitBackfaceVisibility: 'hidden',
+          opacity: '0',
+          visibility: 'hidden',
+          zIndex: '12',
+        });
+        document.querySelector('.slides').appendChild(safariTransitionCover);
+        return safariTransitionCover;
+      }
+
+      function paintSafariLayer(layer, source) {
+        if (!isSafari || !layer || !source) return Promise.resolve();
+        const record = getSafariImageRecord(source);
+        return record.ready.then(() => {
+          const image = record.image;
+          const width = image.naturalWidth || 1920;
+          const height = image.naturalHeight || 1080;
+          if (layer.dataset.safariSrc === source && layer.width === width && layer.height === height) {
+            return;
+          }
+          layer.width = width;
+          layer.height = height;
+          const context = layer.getContext('2d', { alpha: false });
+          if (!context) return;
+          context.imageSmoothingEnabled = true;
+          context.imageSmoothingQuality = 'high';
+          context.clearRect(0, 0, width, height);
+          context.drawImage(image, 0, 0, width, height);
+          layer.dataset.safariSrc = source;
+        });
+      }
+
+      function usesSafariTransitionCover(targetSlide) {
+        if (!isSafari || !targetSlide) return false;
+        const slides = Reveal.getSlides();
+        const currentIndex = slides.indexOf(Reveal.getCurrentSlide());
+        const targetIndex = slides.indexOf(targetSlide);
+        return Math.max(currentIndex, targetIndex) >= safariCoverFromSlide - 1;
+      }
+
+      function hideSafariTransitionCoverAfterSwap() {
+        if (!isSafari || !safariTransitionCover) return;
+        window.clearTimeout(safariTransitionCoverHideTimer);
+        safariTransitionCoverHideTimer = window.setTimeout(() => {
+          if (!safariTransitionCover) return;
+          safariTransitionCover.style.opacity = '0';
+          safariTransitionCover.style.visibility = 'hidden';
+        }, safariCoverHoldMs);
+      }
+
+      function setSafariBackplate(slide) {
+        if (!isSafari || !slide) return Promise.resolve();
+        const source = getSafariSlideSource(slide);
+        const backplate = ensureSafariBackplate();
+        if (!source || !backplate) return Promise.resolve();
+        return paintSafariLayer(backplate, source);
+      }
+
+      function showSafariTransitionCover(slide) {
+        if (!isSafari || !slide) return Promise.resolve();
+        const source = getSafariSlideSource(slide);
+        const cover = ensureSafariTransitionCover();
+        if (!source || !cover) return Promise.resolve();
+        window.clearTimeout(safariTransitionCoverHideTimer);
+        cover.style.opacity = '0';
+        cover.style.visibility = 'visible';
+        return paintSafariLayer(cover, source).then(() => {
+          cover.style.opacity = '1';
+          return waitForNextPaint(safariBackplateWarmupFrames);
+        });
       }
 
       // load the videos on the next `count` slides ahead of `slide`, so
@@ -280,22 +512,122 @@
         }
       }
 
-      // unlike the Vimeo embeds (autoplaying, so only a few are loaded at
-      // once), the slide images are static and cheap to hold decoded in
-      // memory — load & decode all of them right away so a fast click-through
-      // never outruns a proximity-based preload window
+      function maybeWarmLateVimeoConnections(slide) {
+        if (!isSafari || !slide || safariLateVimeoWarmStarted) return;
+        const slides = Reveal.getSlides();
+        const current = slides.indexOf(slide);
+        if (current === -1) return;
+        if (current < safariLateVimeoWarmStartSlide - 1) return;
+        safariLateVimeoWarmStarted = true;
+        const warmup = document.createElement('div');
+        warmup.setAttribute('aria-hidden', 'true');
+        Object.assign(warmup.style, {
+          position: 'fixed',
+          top: '0',
+          left: '-9999px',
+          width: '2px',
+          height: '2px',
+          overflow: 'hidden',
+          opacity: '0',
+          pointerEvents: 'none',
+        });
+        document.body.appendChild(warmup);
+        const lateVideos = [];
+        slides.forEach((candidate, index) => {
+          if (index < safariLateVimeoFromSlide - 1) return;
+          candidate.querySelectorAll('.vimeo-item[data-vimeo-id]').forEach(el => {
+            lateVideos.push(el.dataset.vimeoId);
+          });
+        });
+        lateVideos.forEach((id, index) => {
+          window.setTimeout(() => {
+            const iframe = document.createElement('iframe');
+            iframe.src = `https://player.vimeo.com/video/${id}?autoplay=1&muted=1&loop=1&controls=0&background=1`;
+            iframe.allow = 'autoplay; fullscreen; picture-in-picture';
+            iframe.setAttribute('frameborder', '0');
+            iframe.tabIndex = -1;
+            iframe.style.width = '2px';
+            iframe.style.height = '2px';
+            iframe.style.border = '0';
+            warmup.appendChild(iframe);
+          }, index * safariLateVimeoWarmStepMs);
+        });
+      }
+
+      function vimeoPreloadAhead() {
+        return isSafari ? safariVimeoPreloadAhead : 3;
+      }
+
       function loadAllSlideBgs() {
-        Reveal.getSlides().forEach(loadSlideBg);
+        const slides = Reveal.getSlides();
+        if (isSafari) {
+          slides.forEach((slide, index) => {
+            if (index < safariEagerImageThroughSlide) loadSlideBg(slide);
+          });
+          return;
+        }
+        slides.forEach(loadSlideBg);
+      }
+
+      function preloadSafariNearbySlideBgs(slide) {
+        if (!isSafari || !slide) return;
+        const slides = Reveal.getSlides();
+        const current = slides.indexOf(slide);
+        if (current === -1) return;
+        for (let i = 0; i <= safariImagePreloadAhead && current + i < slides.length; i++) {
+          loadSlideBg(slides[current + i]);
+        }
+      }
+
+      function getTargetSlide(direction) {
+        const slides = Reveal.getSlides();
+        const current = slides.indexOf(Reveal.getCurrentSlide());
+        if (current === -1) return null;
+        return slides[current + direction] || null;
+      }
+
+      function waitForSlideImage(slide, cover = false) {
+        if (!isSafari || !slide) return Promise.resolve();
+        const img = slide.querySelector('img.slide-bg');
+        if (!img) return Promise.resolve();
+        const source = getSafariSlideSource(slide);
+        if (!source) return Promise.resolve();
+        return preloadSafariImageSource(source).then(() => {
+          if (!img.getAttribute('src')) {
+            loadSlideBg(slide);
+          }
+          return decodeSlideImage(img);
+        }).then(() => (
+          cover ? showSafariTransitionCover(slide) : setSafariBackplate(slide)
+        ));
+      }
+
+      function navigateSafariWhenReady(direction) {
+        const target = getTargetSlide(direction);
+        if (!target || safariNavigationPending) return;
+        const cover = usesSafariTransitionCover(target);
+        safariNavigationPending = true;
+        waitForSlideImage(target, cover).then(() => {
+          direction < 0 ? Reveal.prev() : Reveal.next();
+          if (cover) hideSafariTransitionCoverAfterSwap();
+        }).finally(() => {
+          safariNavigationPending = false;
+        });
       }
 
       Reveal.on('slidechanged', e => {
         loadVimeoInSlide(e.currentSlide);
-        preloadUpcomingSlides(e.currentSlide, 3);
+        preloadUpcomingSlides(e.currentSlide, vimeoPreloadAhead());
+        maybeWarmLateVimeoConnections(e.currentSlide);
+        preloadSafariNearbySlideBgs(e.currentSlide);
+        setSafariBackplate(e.currentSlide);
       });
       Reveal.on('ready', e => {
         loadVimeoInSlide(e.currentSlide);
-        preloadUpcomingSlides(e.currentSlide, 3);
+        preloadUpcomingSlides(e.currentSlide, vimeoPreloadAhead());
+        maybeWarmLateVimeoConnections(e.currentSlide);
         loadAllSlideBgs();
+        setSafariBackplate(e.currentSlide);
       });
 
       // click-to-navigate + arrow cursor, ported from the main site's slideshow nav
@@ -312,12 +644,21 @@
       });
       revealEl.addEventListener('click', e => {
         if (e.target.closest('a')) return;
-        if (isLeftHalf(e)) {
+        const direction = isLeftHalf(e) ? -1 : 1;
+        if (isSafari) {
+          navigateSafariWhenReady(direction);
+        } else if (direction < 0) {
           Reveal.prev();
         } else {
           Reveal.next();
         }
       });
+
+      if (isSafari) {
+        revealConfig.viewDistance = 3;
+        revealConfig.mobileViewDistance = 3;
+        Reveal.initialize(revealConfig);
+      }
     </script>
   </body>
 </html>
