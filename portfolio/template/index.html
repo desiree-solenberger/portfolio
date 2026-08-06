@@ -209,23 +209,29 @@
       const safariCoverHoldMs = 700;
       const safariEagerImageThroughSlide = 23;
       const safariImagePreloadAhead = 3;
-      const safariVimeoPreloadAhead = 3;
+      const safariVimeoPreloadAhead = 7;
       const safariLateVimeoFromSlide = 25;
       const safariLateVimeoWarmStartSlide = 13;
       const safariLateVimeoWarmStepMs = 650;
+      const safariLateVimeoReadyTimeoutMs = 2200;
+      const lateVimeoThumbnailFromSlide = 24;
       let safariNavigationPending = false;
       let safariBackplate = null;
       let safariTransitionCover = null;
       let safariTransitionCoverHideTimer = 0;
       let safariLateVimeoWarmStarted = false;
       const safariImageCache = new Map();
+      const vimeoThumbCache = new Map();
+      const lateVimeoPlayers = new Map();
+      let lateVimeoLayer = null;
+
+      primeVimeoThumbs();
 
       if (isSafari) {
         document.querySelectorAll('img.slide-bg').forEach(img => {
           const source = img.getAttribute('src') || img.getAttribute('data-src');
           if (source) img.dataset.safariSrc = source;
         });
-        primeVimeoThumbs();
       }
 
       function resizeVimeoIframe(el, iframe) {
@@ -242,11 +248,227 @@
         iframe.style.setProperty('max-height', 'none', 'important');
       }
 
+      function getSlideIndex(slide) {
+        const slides = typeof Reveal.getSlides === 'function' && Reveal.getSlides().length
+          ? Reveal.getSlides()
+          : Array.from(document.querySelectorAll('.slides > section'));
+        return slides.indexOf(slide);
+      }
+
+      function isLateVimeoSlide(slide) {
+        const index = getSlideIndex(slide);
+        return index !== -1 && index >= lateVimeoThumbnailFromSlide - 1;
+      }
+
+      function isPresentSlide(slide) {
+        return slide && slide.classList.contains('present');
+      }
+
+      function shouldHoldVimeoThumb(el) {
+        return isSafari && isLateVimeoSlide(el.closest('section'));
+      }
+
+      function showVimeoThumbWhenPreloading(el) {
+        if (shouldHoldVimeoThumb(el) && !isPresentSlide(el.closest('section'))) {
+          el.classList.remove('thumb-hidden');
+        }
+      }
+
+      function hideVimeoThumbWhenVisible(el) {
+        const slide = el.closest('section');
+        el.dataset.vimeoReady = 'true';
+        if (shouldHoldVimeoThumb(el) && !isPresentSlide(slide)) {
+          el.classList.remove('thumb-hidden');
+          return;
+        }
+        const hide = () => {
+          if (!shouldHoldVimeoThumb(el) || isPresentSlide(slide)) {
+            el.classList.add('thumb-hidden');
+          }
+        };
+        shouldHoldVimeoThumb(el) ? waitForNextPaint(2).then(hide) : hide();
+      }
+
+      function ensureLateVimeoLayer() {
+        if (!isSafari) return null;
+        if (lateVimeoLayer) return lateVimeoLayer;
+        lateVimeoLayer = document.createElement('div');
+        lateVimeoLayer.setAttribute('aria-hidden', 'true');
+        Object.assign(lateVimeoLayer.style, {
+          position: 'absolute',
+          top: '0',
+          left: '0',
+          width: '1920px',
+          height: '1080px',
+          pointerEvents: 'none',
+          zIndex: '0',
+        });
+        document.querySelector('.slides').appendChild(lateVimeoLayer);
+        return lateVimeoLayer;
+      }
+
+      function getLateVimeoKey(el) {
+        if (!el.dataset.lateVimeoKey) {
+          const slide = el.closest('section');
+          const siblings = Array.from(slide.querySelectorAll('.vimeo-item[data-vimeo-id]'));
+          el.dataset.lateVimeoKey = `${getSlideIndex(slide)}:${siblings.indexOf(el)}:${el.dataset.vimeoId}`;
+        }
+        return el.dataset.lateVimeoKey;
+      }
+
+      function positionLateVimeoPlayer(record, visible = false) {
+        const placement = getGridPlacement(record.el);
+        if (!placement) return;
+        Object.assign(record.wrap.style, {
+          left: `${placement.x}px`,
+          top: `${placement.y}px`,
+          width: `${placement.width}px`,
+          height: `${placement.height}px`,
+          opacity: visible ? '1' : '0',
+          zIndex: visible ? '14' : '0',
+        });
+        record.iframe.style.setProperty('width', `${placement.height * 1.5}px`, 'important');
+        record.iframe.style.setProperty('height', `${placement.height}px`, 'important');
+      }
+
+      function markLateVimeoReady(record) {
+        if (record.ready) return;
+        record.ready = true;
+        record.el.dataset.vimeoReady = 'true';
+        record.resolveReady();
+        if (isPresentSlide(record.el.closest('section'))) {
+          activateLateVimeoPlayer(record.el);
+        }
+      }
+
+      function ensureLateVimeoPlayer(el) {
+        if (!shouldHoldVimeoThumb(el)) return null;
+        const key = getLateVimeoKey(el);
+        if (lateVimeoPlayers.has(key)) return lateVimeoPlayers.get(key);
+
+        const layer = ensureLateVimeoLayer();
+        if (!layer) return null;
+
+        const wrap = document.createElement('div');
+        Object.assign(wrap.style, {
+          position: 'absolute',
+          overflow: 'hidden',
+          pointerEvents: 'none',
+          opacity: '0.001',
+          zIndex: '0',
+        });
+
+        const iframe = document.createElement('iframe');
+        iframe.src = `https://player.vimeo.com/video/${el.dataset.vimeoId}?autoplay=1&muted=1&loop=1&controls=0&background=1&playsinline=1&autopause=0`;
+        iframe.allow = 'autoplay; fullscreen; picture-in-picture';
+        iframe.setAttribute('frameborder', '0');
+        iframe.tabIndex = -1;
+        Object.assign(iframe.style, {
+          position: 'absolute',
+          top: '50%',
+          left: '50%',
+          transform: 'translate(-50%, -50%)',
+          maxWidth: 'none',
+          maxHeight: 'none',
+          border: '0',
+          pointerEvents: 'none',
+        });
+
+        let resolveReady;
+        const readyPromise = new Promise(resolve => { resolveReady = resolve; });
+        const record = { el, wrap, iframe, ready: false, readyPromise, resolveReady };
+        lateVimeoPlayers.set(key, record);
+        wrap.appendChild(iframe);
+        layer.appendChild(wrap);
+        positionLateVimeoPlayer(record, false);
+
+        const onMessage = (e) => {
+          if (e.source !== iframe.contentWindow) return;
+          try {
+            const data = JSON.parse(e.data);
+            if (data.event === 'ready') {
+              iframe.contentWindow.postMessage(
+                JSON.stringify({ method: 'addEventListener', value: 'play' }), '*'
+              );
+              iframe.contentWindow.postMessage(JSON.stringify({ method: 'play' }), '*');
+            }
+            if (data.event === 'play') {
+              markLateVimeoReady(record);
+              window.removeEventListener('message', onMessage);
+            }
+          } catch {}
+        };
+
+        window.addEventListener('message', onMessage);
+        iframe.addEventListener('load', () => {
+          iframe.contentWindow.postMessage(JSON.stringify({ method: 'play' }), '*');
+          window.setTimeout(() => {
+            markLateVimeoReady(record);
+            window.removeEventListener('message', onMessage);
+          }, 4000);
+        }, { once: true });
+
+        return record;
+      }
+
+      function activateLateVimeoPlayer(el) {
+        const record = ensureLateVimeoPlayer(el);
+        if (!record) return;
+        positionLateVimeoPlayer(record, record.ready);
+        record.iframe.contentWindow.postMessage(JSON.stringify({ method: 'play' }), '*');
+        if (record.ready) {
+          waitForNextPaint(2).then(() => {
+            if (isPresentSlide(el.closest('section'))) {
+              el.classList.add('thumb-hidden');
+              positionLateVimeoPlayer(record, true);
+            }
+          });
+        } else {
+          el.classList.remove('thumb-hidden');
+        }
+      }
+
+      function showLateVimeoPlayersForSlide(slide) {
+        if (!isSafari) return;
+        const hasLateVideo = slide && Array.from(slide.querySelectorAll('.vimeo-item[data-vimeo-id]'))
+          .some(shouldHoldVimeoThumb);
+        if (hasLateVideo) ensureLateVimeoLayer();
+        if (lateVimeoLayer) lateVimeoLayer.style.zIndex = hasLateVideo ? '14' : '0';
+        lateVimeoPlayers.forEach(record => {
+          if (record.el.closest('section') !== slide) {
+            positionLateVimeoPlayer(record, false);
+          }
+        });
+        if (!slide) return;
+        slide.querySelectorAll('.vimeo-item[data-vimeo-id]').forEach(el => {
+          if (shouldHoldVimeoThumb(el)) activateLateVimeoPlayer(el);
+        });
+      }
+
+      function waitForLateVimeoPlayers(slide) {
+        if (!isSafari || !isLateVimeoSlide(slide)) return Promise.resolve();
+        const records = Array.from(slide.querySelectorAll('.vimeo-item[data-vimeo-id]'))
+          .map(ensureLateVimeoPlayer)
+          .filter(Boolean);
+        if (!records.length) return Promise.resolve();
+        return Promise.race([
+          Promise.all(records.map(record => record.readyPromise)),
+          new Promise(resolve => window.setTimeout(resolve, safariLateVimeoReadyTimeoutMs))
+        ]).then(() => {});
+      }
+
       function loadVimeoInSlide(slide) {
         if (!slide) return;
         slide.querySelectorAll('.vimeo-item[data-vimeo-id]').forEach(el => {
           if (el.dataset.thumb) {
             el.style.setProperty('--thumb', `url("${el.dataset.thumb}")`);
+          }
+          showVimeoThumbWhenPreloading(el);
+
+          if (shouldHoldVimeoThumb(el)) {
+            ensureLateVimeoPlayer(el);
+            if (isPresentSlide(slide)) activateLateVimeoPlayer(el);
+            return;
           }
 
           let iframe = el.querySelector('iframe');
@@ -260,7 +482,7 @@
             iframe.style.transform = 'translate(-50%, -50%)';
             el.appendChild(iframe);
 
-            const show = () => { el.classList.add('thumb-hidden'); };
+            const show = () => { hideVimeoThumbWhenVisible(el); };
             const onMessage = (e) => {
               if (e.source !== iframe.contentWindow) return;
               try {
@@ -289,9 +511,20 @@
       function primeVimeoThumbs() {
         document.querySelectorAll('.vimeo-item[data-thumb]').forEach(el => {
           el.style.setProperty('--thumb', `url("${el.dataset.thumb}")`);
-          const image = new Image();
-          image.src = el.dataset.thumb;
+          getVimeoThumbRecord(el.dataset.thumb);
         });
+      }
+
+      function getVimeoThumbRecord(source) {
+        if (!vimeoThumbCache.has(source)) {
+          const image = new Image();
+          image.loading = 'eager';
+          image.decoding = 'sync';
+          const ready = decodeSlideImage(image);
+          image.src = source;
+          vimeoThumbCache.set(source, { image, ready });
+        }
+        return vimeoThumbCache.get(source);
       }
 
       function loadSlideBg(slide) {
@@ -438,6 +671,30 @@
         return safariTransitionCover;
       }
 
+      function getGridPlacement(el) {
+        const column = (el.style.gridColumn || '').match(/(\d+)\s*\/\s*(\d+)/);
+        const row = (el.style.gridRow || '').match(/(\d+)\s*\/\s*(\d+)/);
+        if (!column || !row) return null;
+        const padding = 10;
+        const gap = 7;
+        const columns = 12;
+        const rows = 12;
+        const trackWidth = (1920 - (padding * 2) - (gap * (columns - 1))) / columns;
+        const trackHeight = (1080 - (padding * 2) - (gap * (rows - 1))) / rows;
+        const startColumn = Number(column[1]);
+        const endColumn = Number(column[2]);
+        const startRow = Number(row[1]);
+        const endRow = Number(row[2]);
+        const spanColumns = endColumn - startColumn;
+        const spanRows = endRow - startRow;
+        return {
+          x: padding + ((startColumn - 1) * (trackWidth + gap)),
+          y: padding + ((startRow - 1) * (trackHeight + gap)),
+          width: (spanColumns * trackWidth) + ((spanColumns - 1) * gap),
+          height: (spanRows * trackHeight) + ((spanRows - 1) * gap),
+        };
+      }
+
       function paintSafariLayer(layer, source) {
         if (!isSafari || !layer || !source) return Promise.resolve();
         const record = getSafariImageRecord(source);
@@ -463,8 +720,9 @@
       function usesSafariTransitionCover(targetSlide) {
         if (!isSafari || !targetSlide) return false;
         const slides = Reveal.getSlides();
-        const currentIndex = slides.indexOf(Reveal.getCurrentSlide());
         const targetIndex = slides.indexOf(targetSlide);
+        if (targetIndex === -1 || targetIndex === slides.length - 1) return false;
+        const currentIndex = slides.indexOf(Reveal.getCurrentSlide());
         return Math.max(currentIndex, targetIndex) >= safariCoverFromSlide - 1;
       }
 
@@ -476,6 +734,13 @@
           safariTransitionCover.style.opacity = '0';
           safariTransitionCover.style.visibility = 'hidden';
         }, safariCoverHoldMs);
+      }
+
+      function hideSafariTransitionCoverNow() {
+        if (!isSafari || !safariTransitionCover) return;
+        window.clearTimeout(safariTransitionCoverHideTimer);
+        safariTransitionCover.style.opacity = '0';
+        safariTransitionCover.style.visibility = 'hidden';
       }
 
       function setSafariBackplate(slide) {
@@ -519,37 +784,16 @@
         if (current === -1) return;
         if (current < safariLateVimeoWarmStartSlide - 1) return;
         safariLateVimeoWarmStarted = true;
-        const warmup = document.createElement('div');
-        warmup.setAttribute('aria-hidden', 'true');
-        Object.assign(warmup.style, {
-          position: 'fixed',
-          top: '0',
-          left: '-9999px',
-          width: '2px',
-          height: '2px',
-          overflow: 'hidden',
-          opacity: '0',
-          pointerEvents: 'none',
-        });
-        document.body.appendChild(warmup);
         const lateVideos = [];
         slides.forEach((candidate, index) => {
           if (index < safariLateVimeoFromSlide - 1) return;
           candidate.querySelectorAll('.vimeo-item[data-vimeo-id]').forEach(el => {
-            lateVideos.push(el.dataset.vimeoId);
+            lateVideos.push(el);
           });
         });
-        lateVideos.forEach((id, index) => {
+        lateVideos.forEach((el, index) => {
           window.setTimeout(() => {
-            const iframe = document.createElement('iframe');
-            iframe.src = `https://player.vimeo.com/video/${id}?autoplay=1&muted=1&loop=1&controls=0&background=1`;
-            iframe.allow = 'autoplay; fullscreen; picture-in-picture';
-            iframe.setAttribute('frameborder', '0');
-            iframe.tabIndex = -1;
-            iframe.style.width = '2px';
-            iframe.style.height = '2px';
-            iframe.style.border = '0';
-            warmup.appendChild(iframe);
+            ensureLateVimeoPlayer(el);
           }, index * safariLateVimeoWarmStepMs);
         });
       }
@@ -607,8 +851,10 @@
         if (!target || safariNavigationPending) return;
         const cover = usesSafariTransitionCover(target);
         safariNavigationPending = true;
-        waitForSlideImage(target, cover).then(() => {
+        waitForSlideImage(target, cover).then(() => waitForLateVimeoPlayers(target)).then(() => {
+          if (!cover) hideSafariTransitionCoverNow();
           direction < 0 ? Reveal.prev() : Reveal.next();
+          showLateVimeoPlayersForSlide(Reveal.getCurrentSlide());
           if (cover) hideSafariTransitionCoverAfterSwap();
         }).finally(() => {
           safariNavigationPending = false;
@@ -621,6 +867,7 @@
         maybeWarmLateVimeoConnections(e.currentSlide);
         preloadSafariNearbySlideBgs(e.currentSlide);
         setSafariBackplate(e.currentSlide);
+        showLateVimeoPlayersForSlide(e.currentSlide);
       });
       Reveal.on('ready', e => {
         loadVimeoInSlide(e.currentSlide);
@@ -628,6 +875,7 @@
         maybeWarmLateVimeoConnections(e.currentSlide);
         loadAllSlideBgs();
         setSafariBackplate(e.currentSlide);
+        showLateVimeoPlayersForSlide(e.currentSlide);
       });
 
       // click-to-navigate + arrow cursor, ported from the main site's slideshow nav
