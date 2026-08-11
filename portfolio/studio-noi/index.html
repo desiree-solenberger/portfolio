@@ -209,7 +209,10 @@
       const safariEagerImageThroughSlide = 23;
       const safariImagePreloadAhead = 3;
       const safariVimeoPreloadAhead = 7;
-      const safariLateVimeoFromSlide = 25;
+      // first video after the long image-only stretch (slides 8-18); every
+      // video from here on is too far past the preload window to warm up on
+      // its own, so they get eager warm-start + the longer ready timeout
+      const safariLateVimeoFromSlide = 19;
       const safariLateVimeoWarmStartSlide = 1;
       const safariLateVimeoWarmStepMs = 350;
       const safariVimeoReadyTimeoutMs = 2200;
