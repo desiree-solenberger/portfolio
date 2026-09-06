@@ -1,0 +1,656 @@
+<!DOCTYPE html>
+<html lang="en">
+
+  <head>
+    <meta charset="utf-8" />
+    <title>Embodied Interfaces</title>
+    <link rel="stylesheet" type="text/css" href="css/main.css" />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.0/p5.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.0/addons/p5.sound.min.js"></script>
+    <script src="https://unpkg.com/ml5@latest/dist/ml5.min.js"></script>
+   <style>
+@import url('https://fonts.googleapis.com/css2?family=Chivo+Mono:ital,wght@0,200;1,200&display=swap');
+</style>
+  </head>
+
+  <body>
+  <main>
+  <div class="page">
+    <div class="header" id="index-header">
+      <div class="header-grid-overlay">
+        <div></div><div></div>
+        <div></div><div></div>
+        <div></div><div></div>
+        <div></div><div></div>
+      </div>
+      <div class="top-line">
+        <span class="top-word top-word-input"><a href="input.html">Input</a></span>
+        <h1 class="text-1" id="mvmt-title">Embodied Interfaces</a></h1>
+        <div class="top-line-right">
+          <span class="top-word top-word-output"><a href="output.html">Output</a></span>
+        </div>
+      </div>
+      <div class="filters">
+        <div class="filters-line">
+          <h3>Eyes</h3>
+          <h3>Hands</h3>
+          <h3>Arm</h3>
+          <h3>Body</h3>
+          <h3>Environment</h3>
+          <h3>OpenCV</h3>
+          <h3>BlazePose</h3>
+          <h3>FaceMesh</h3>
+          <h3>HandPose</h3>
+        </div>
+        <div class="filters-line">
+          <h3>Camera</h3>
+          <h3>Webcam</h3>
+          <h3>Generated movement</h3>
+          <h3>Form</h3>
+          <h3>Composition</h3>
+          <h3>Free</h3>
+          <h3>Technical</h3>
+        </div>
+      </div>
+      <h3 class="col-title col-title-left">Choreographic Toolkit</h3>
+      <h3 class="col-title col-title-right">Typography</h3>
+    </div>
+
+    <!-- Each experiment is one .expt block. --i is its slot number; the CSS
+         derives the four grid rows from it, so adding an experiment means
+         appending a block and bumping --expt-count in the stylesheet. -->
+    <nav class="side-nav side-nav-left" aria-label="Jump to experiment, choreographic toolkit">
+        <button type="button" data-slot="1" aria-label="Experiment 1">1</button>
+        <button type="button" data-slot="2" aria-label="Experiment 2">2</button>
+        <button type="button" data-slot="3" aria-label="Experiment 3">3</button>
+        <button type="button" data-slot="4" aria-label="Experiment 4">4</button>
+        <button type="button" data-slot="5" aria-label="Experiment 5">5</button>
+        <button type="button" data-slot="6" aria-label="Experiment 6">6</button>
+        <button type="button" data-slot="7" aria-label="Experiment 7">7</button>
+        <button type="button" data-slot="8" aria-label="Experiment 8">8</button>
+        <button type="button" data-slot="9" aria-label="Experiment 9">9</button>
+        <button type="button" data-slot="10" aria-label="Experiment 10">10</button>
+        <button type="button" data-slot="11" aria-label="Experiment 11">11</button>
+        <button type="button" data-slot="12" aria-label="Experiment 12">12</button>
+    </nav>
+
+    <div class="col-1">
+      <div class="col-1-overlay">
+        <div></div><div></div><div></div><div></div>
+        <div></div><div></div><div></div><div></div>
+        <div></div><div></div><div></div><div></div>
+        <div></div><div></div><div></div><div></div>
+        <div></div><div></div><div></div><div></div>
+        <div></div><div></div><div></div><div></div>
+        <div></div><div></div><div></div><div></div>
+        <div></div><div></div><div></div><div></div>
+        <div></div><div></div><div></div><div></div>
+        <div></div><div></div><div></div><div></div>
+        <div></div><div></div><div></div><div></div>
+        <div></div><div></div><div></div><div></div>
+      </div>
+
+      <div class="expt" style="--i: 1">
+        <h2 class="expt-count">1</h2>
+        <div class="expt-kp">&lt;kp&gt;</div>
+        <div class="expt-media layer-stack" id="stack-1">
+          <img class="layer is-active" data-layer="vid" data-label="&lt;type&gt;" src="imgs/1-vid.png" alt="Contour" />
+          <div class="layer video-wrapper-mvmt" data-layer="txt" data-label="&lt;body&gt;"
+               data-vimeo-id="1224353769" data-thumb="imgs/t/1_2.jpg"></div>
+        </div>
+        <div class="expt-label-row">
+          <h2 class="expt-label">Contour</h2>
+          <button type="button" class="layer-toggle" data-target="stack-1">&lt;type&gt;</button>
+        </div>
+        <div class="expt-filters">
+          <h3>Environment</h3>
+          <h3>OpenCV</h3>
+          <h3>Form</h3>
+        </div>
+      </div>
+
+      <div class="expt" style="--i: 2">
+        <h2 class="expt-count">2</h2>
+        <div class="expt-kp">&lt;kp&gt;</div>
+        <div class="expt-media layer-stack" id="stack-2">
+          <div class="layer is-active video-wrapper-mvmt" data-layer="vid" data-label="&lt;type&gt;"
+               data-vimeo-id="1218569417" data-thumb="imgs/t/2v.jpg"></div>
+          <div class="layer video-wrapper-mvmt" data-layer="txt" data-label="&lt;body&gt;"
+               data-vimeo-id="1218569376" data-thumb="imgs/t/2t.jpg"></div>
+        </div>
+        <div class="expt-label-row">
+          <h2 class="expt-label">Bounds</h2>
+          <button type="button" class="layer-toggle" data-target="stack-2">&lt;type&gt;</button>
+        </div>
+        <div class="expt-filters">
+          <h3>Environment</h3>
+          <h3>Body</h3>
+          <h3>OpenCV</h3>
+          <h3>Webcam</h3>
+          <h3>Composition</h3>
+          <h3>Free</h3>
+        </div>
+      </div>
+
+      <div class="expt" style="--i: 3">
+        <h2 class="expt-count">3</h2>
+        <div class="expt-kp">&lt;kp&gt;&lt;0&gt;</div>
+        <div class="expt-media layer-stack" id="stack-3">
+          <div class="layer is-active video-wrapper-mvmt" data-layer="vid" data-label="&lt;type&gt;"
+               data-vimeo-id="1218569416" data-thumb="imgs/t/3v.jpg"></div>
+          <div class="layer video-wrapper-mvmt" data-layer="txt" data-label="&lt;body&gt;"
+               data-vimeo-id="1218571798" data-thumb="imgs/t/3t.jpg"></div>
+        </div>
+        <div class="expt-label-row">
+          <h2 class="expt-label">Ornament</h2>
+          <button type="button" class="layer-toggle" data-target="stack-3">&lt;type&gt;</button>
+        </div>
+        <div class="expt-filters">
+          <h3>Hands</h3>
+          <h3>HandPose</h3>
+          <h3>Webcam</h3>
+          <h3>Form</h3>
+          <h3>Free</h3>
+        </div>
+      </div>
+
+      <div class="expt" style="--i: 4">
+        <h2 class="expt-count">4</h2>
+        <div class="expt-kp">&lt;kp&gt;&lt;11&gt;&lt;15&gt;</div>
+        <div class="expt-media layer-stack" id="stack-4">
+          <div class="layer is-active video-wrapper-mvmt" data-layer="vid" data-label="&lt;type&gt;"
+               data-vimeo-id="1218572483" data-thumb="imgs/t/4v.jpg"></div>
+          <div class="layer video-wrapper-mvmt" data-layer="txt" data-label="&lt;body&gt;"
+               data-vimeo-id="1218572484" data-thumb="imgs/t/4t.jpg"></div>
+        </div>
+        <div class="expt-label-row">
+          <h2 class="expt-label">Angle</h2>
+          <button type="button" class="layer-toggle" data-target="stack-4">&lt;type&gt;</button>
+        </div>
+        <div class="expt-filters">
+          <h3>Hands</h3>
+          <h3>Arm</h3>
+          <h3>HandPose</h3>
+          <h3>BlazePose</h3>
+          <h3>Webcam</h3>
+          <h3>Composition</h3>
+          <h3>Technical</h3>
+        </div>
+      </div>
+
+      <div class="expt" style="--i: 5">
+        <h2 class="expt-count">5</h2>
+        <div class="expt-kp">&lt;kp&gt;&lt;0–32&gt;</div>
+        <div class="expt-media layer-stack" id="stack-5">
+          <div class="layer is-active video-wrapper-mvmt" data-layer="vid" data-label="&lt;type&gt;"
+               data-vimeo-id="1218572527" data-thumb="imgs/t/5v.jpg"></div>
+          <div class="layer video-wrapper-mvmt" data-layer="txt" data-label="&lt;body&gt;"
+               data-vimeo-id="1218569377" data-thumb="imgs/t/5t.jpg"></div>
+        </div>
+        <div class="expt-label-row">
+          <h2 class="expt-label">Skew</h2>
+          <button type="button" class="layer-toggle" data-target="stack-5">&lt;type&gt;</button>
+        </div>
+        <div class="expt-filters">
+          <h3>Body</h3>
+          <h3>BlazePose</h3>
+          <h3>Webcam</h3>
+          <h3>Composition</h3>
+          <h3>Free</h3>
+        </div>
+      </div>
+
+      <div class="expt" style="--i: 6">
+        <h2 class="expt-count">6</h2>
+        <div class="expt-kp">&lt;kp&gt;&lt;4&gt;&lt;8&gt;</div>
+        <div class="expt-media layer-stack" id="stack-6">
+          <div class="layer is-active video-wrapper-mvmt" data-layer="vid" data-label="&lt;type&gt;"
+               data-vimeo-id="1218572526" data-thumb="imgs/t/6v.jpg"></div>
+          <div class="layer video-wrapper-mvmt" data-layer="txt" data-label="&lt;body&gt;"
+               data-vimeo-id="1218572529" data-thumb="imgs/t/6t.jpg"></div>
+        </div>
+        <div class="expt-label-row">
+          <h2 class="expt-label">To Mold</h2>
+          <button type="button" class="layer-toggle" data-target="stack-6">&lt;type&gt;</button>
+        </div>
+        <div class="expt-filters">
+          <h3>Hands</h3>
+          <h3>HandPose</h3>
+          <h3>Webcam</h3>
+          <h3>Form</h3>
+          <h3>Free</h3>
+        </div>
+      </div>
+
+      <div class="expt" style="--i: 7">
+        <h2 class="expt-count">7</h2>
+        <div class="expt-kp">&lt;kp&gt;&lt;0–32&gt;</div>
+        <div class="expt-media layer-stack" id="stack-7">
+          <div class="layer is-active video-wrapper-mvmt" data-layer="vid" data-label="&lt;type&gt;"
+               data-vimeo-id="1218572541" data-thumb="imgs/t/7v.jpg"></div>
+          <div class="layer video-wrapper-mvmt" data-layer="txt" data-label="&lt;body&gt;"
+               data-vimeo-id="1218572528" data-thumb="imgs/t/7t.jpg"></div>
+        </div>
+        <div class="expt-label-row">
+          <h2 class="expt-label">Contour_2</h2>
+          <button type="button" class="layer-toggle" data-target="stack-7">&lt;type&gt;</button>
+        </div>
+        <div class="expt-filters">
+          <h3>Body</h3>
+          <h3>BlazePose</h3>
+          <h3>Webcam</h3>
+          <h3>Generated movement</h3>
+          <h3>Form</h3>
+        </div>
+      </div>
+
+      <div class="expt" style="--i: 8">
+        <h2 class="expt-count">8</h2>
+        <div class="expt-kp">&lt;kp&gt;&lt;468–472&gt;&lt;473–477&gt;</div>
+        <div class="expt-media layer-stack" id="stack-8">
+          <div class="layer is-active video-wrapper-mvmt" data-layer="vid" data-label="&lt;type&gt;"
+               data-vimeo-id="1218572548" data-thumb="imgs/t/8v.jpg"></div>
+          <div class="layer video-wrapper-mvmt" data-layer="txt" data-label="&lt;body&gt;"
+               data-vimeo-id="1218573492" data-thumb="imgs/t/8t.jpg"></div>
+        </div>
+        <div class="expt-label-row">
+          <h2 class="expt-label">Focus</h2>
+          <button type="button" class="layer-toggle" data-target="stack-8">&lt;type&gt;</button>
+        </div>
+        <div class="expt-filters">
+          <h3>Eyes</h3>
+          <h3>FaceMesh</h3>
+          <h3>Webcam</h3>
+          <h3>Composition</h3>
+          <h3>Technical</h3>
+        </div>
+      </div>
+
+      <div class="expt" style="--i: 9">
+        <h2 class="expt-count">9</h2>
+        <div class="expt-kp">&lt;kp&gt;&lt;0–10&gt;&lt;11&gt;&lt;12&gt;</div>
+        <div class="expt-media layer-stack" id="stack-9">
+          <div class="layer is-active video-wrapper-mvmt" data-layer="vid" data-label="&lt;type&gt;"
+               data-vimeo-id="1218572552" data-thumb="imgs/t/9v.jpg"></div>
+          <div class="layer video-wrapper-mvmt" data-layer="txt" data-label="&lt;body&gt;"
+               data-vimeo-id="1218572549" data-thumb="imgs/t/9t.jpg"></div>
+        </div>
+        <div class="expt-label-row">
+          <h2 class="expt-label">Tilt</h2>
+          <button type="button" class="layer-toggle" data-target="stack-9">&lt;type&gt;</button>
+        </div>
+        <div class="expt-filters">
+          <h3>Body</h3>
+          <h3>BlazePose</h3>
+          <h3>Webcam</h3>
+          <h3>Composition</h3>
+          <h3>Free</h3>
+        </div>
+      </div>
+
+
+      <div class="expt" style="--i: 10">
+        <h2 class="expt-count">10</h2>
+        <div class="expt-kp">&lt;kp&gt;&lt;27&gt;&lt;28&gt;</div>
+        <div class="expt-media layer-stack" id="stack-10">
+          <div class="layer is-active video-wrapper-mvmt" data-layer="vid" data-label="&lt;type&gt;"
+               data-vimeo-id="1218572557" data-thumb="imgs/t/11v.jpg"></div>
+          <div class="layer video-wrapper-mvmt" data-layer="txt" data-label="&lt;body&gt;"
+               data-vimeo-id="1218573714" data-thumb="imgs/t/11t.jpg"></div>
+        </div>
+        <div class="expt-label-row">
+          <h2 class="expt-label">Spacing</h2>
+          <button type="button" class="layer-toggle" data-target="stack-10">&lt;type&gt;</button>
+        </div>
+        <div class="expt-filters">
+          <h3>Body</h3>
+          <h3>BlazePose</h3>
+          <h3>Webcam</h3>
+          <h3>Composition</h3>
+          <h3>Technical</h3>
+        </div>
+      </div>
+
+      <div class="expt" style="--i: 11">
+        <h2 class="expt-count">11</h2>
+        <div class="expt-kp">&lt;kp&gt;&lt;27&gt;&lt;28&gt;</div>
+        <div class="expt-media layer-stack" id="stack-11">
+          <div class="layer is-active video-wrapper-mvmt" data-layer="vid" data-label="&lt;type&gt;"
+               data-vimeo-id="1218572561" data-thumb="imgs/t/12v.jpg"></div>
+          <div class="layer video-wrapper-mvmt" data-layer="txt" data-label="&lt;body&gt;"
+               data-vimeo-id="1218572559" data-thumb="imgs/t/12t.jpg"></div>
+        </div>
+        <div class="expt-label-row">
+          <h2 class="expt-label">Perspective</h2>
+          <button type="button" class="layer-toggle" data-target="stack-11">&lt;type&gt;</button>
+        </div>
+        <div class="expt-filters">
+          <h3>Body</h3>
+          <h3>BlazePose</h3>
+          <h3>Camera</h3>
+          <h3>Composition</h3>
+          <h3>Technical</h3>
+        </div>
+      </div>
+
+      <div class="expt" style="--i: 12">
+        <h2 class="expt-count">12</h2>
+        <div class="expt-kp">&lt;kp&gt;&lt;4&gt;&lt;8&gt;</div>
+        <div class="expt-media layer-stack" id="stack-12">
+          <div class="layer is-active video-wrapper-mvmt" data-layer="vid" data-label="&lt;type&gt;"
+               data-vimeo-id="1218572569" data-thumb="imgs/t/13v.jpg"></div>
+          <div class="layer video-wrapper-mvmt" data-layer="txt" data-label="&lt;body&gt;"
+               data-vimeo-id="1218572562" data-thumb="imgs/t/13t.jpg"></div>
+        </div>
+        <div class="expt-label-row">
+          <h2 class="expt-label">To Mold_2</h2>
+          <button type="button" class="layer-toggle" data-target="stack-12">&lt;type&gt;</button>
+        </div>
+        <div class="expt-filters">
+          <h3>Hands</h3>
+          <h3>HandPose</h3>
+          <h3>Webcam</h3>
+          <h3>Form</h3>
+          <h3>Free</h3>
+        </div>
+      </div>
+
+    </div>
+
+    <div class="col-2">
+      <div class="col-2-overlay">
+        <div></div><div></div><div></div><div></div>
+        <div></div><div></div><div></div><div></div>
+        <div></div><div></div><div></div><div></div>
+        <div></div><div></div><div></div><div></div>
+        <div></div><div></div><div></div><div></div>
+        <div></div><div></div><div></div><div></div>
+        <div></div><div></div><div></div><div></div>
+        <div></div><div></div><div></div><div></div>
+        <div></div><div></div><div></div><div></div>
+        <div></div><div></div><div></div><div></div>
+        <div></div><div></div><div></div><div></div>
+        <div></div><div></div><div></div><div></div>
+      </div>
+
+            <div class="expt" style="--i: 1">
+        <h2 class="expt-count">1</h2>
+        <div class="expt-tag">&lt;a-z&gt;</div>
+        <div class="expt-media img-scroll">
+          <div class="wrapper">
+            <div class="video-wrapper"
+                 data-vimeo-id="1223984041" data-thumb="imgs/t/A2.jpg"></div>
+            <div class="video-wrapper"
+                 data-vimeo-id="1223984147" data-thumb="imgs/t/A7.jpg"></div>
+            <div class="video-wrapper"
+                 data-vimeo-id="1223984231" data-thumb="imgs/t/A4.jpg"></div>
+            <div class="video-wrapper"
+                 data-vimeo-id="1223984380" data-thumb="imgs/t/A6.jpg"></div>
+            <div class="video-wrapper"
+                 data-vimeo-id="1223984381" data-thumb="imgs/t/A1.jpg"></div>
+            <div class="video-wrapper"
+                 data-vimeo-id="1223984379" data-thumb="imgs/t/A5.jpg"></div>
+            <div class="video-wrapper"
+                 data-vimeo-id="1223948333" data-thumb="imgs/t/1_1.jpg"></div>
+            <img src="imgs/7_1.png" alt="Contour">
+            <img src="imgs/1_13.jpg" alt="Contour 13">
+            <img src="imgs/1_2.jpg" alt="Contour 2">
+            <img src="imgs/1_3.jpg" alt="Contour 3">
+            <img src="imgs/1_4.jpg" alt="Contour 4">
+            <img src="imgs/1_5.jpg" alt="Contour 5">
+            <img src="imgs/1_6.jpg" alt="Contour 6">
+            <img src="imgs/1_7.jpg" alt="Contour 7">
+            <img src="imgs/1_8.jpg" alt="Contour 8">
+            <img src="imgs/1_9.jpg" alt="Contour 9">
+            <img src="imgs/1_10.jpg" alt="Contour 10">
+            <img src="imgs/1_11.jpg" alt="Contour 11">
+          </div>
+        </div>
+        <div class="expt-label-row">
+          <h2 class="expt-label">Contour</h2>
+        </div>
+        <div class="expt-text">
+          <p>Recursively tracking edges of digital characters with OpenCV within the digital screen. This tracking created unexpected overlaps and glitches based on the size and resolution of the tracking algorithm. The theme of this experiment became isolating machine and computer vision qualities.</p>
+        </div>
+      </div>
+
+      <div class="expt" style="--i: 2">
+        <h2 class="expt-count">2</h2>
+        <div class="expt-tag">&lt;p&gt;&lt;/p&gt;</div>
+        <div class="expt-media img-scroll">
+          <div class="wrapper">
+            <img src="imgs/2_1.jpg" alt="Bounds">
+            <img src="imgs/2_2.jpg" alt="Bounds">
+            <div class="video-wrapper"
+                 data-vimeo-id="1223068272" data-thumb="imgs/t/2-.jpg"></div>
+          </div>
+        </div>
+        <div class="expt-label-row">
+          <h2 class="expt-label">Bounds</h2>
+        </div>
+        <div class="expt-text">
+          <p>Paragraphs of text are always framed by a bounding box. On default design tools, these boxes are rectangular and linear. This study uses the ever-morphing bounds of OpenCV edge detection algorithms as the new bounding box. What emerges is a generative layout system following the shape of the surrounding space, including bodies.</p>
+        </div>
+      </div>
+
+      <div class="expt" style="--i: 3">
+        <h2 class="expt-count">3</h2>
+        <div class="expt-tag">&lt;h1&gt;</div>
+        <div class="expt-media img-scroll">
+          <div class="wrapper">
+            <img src="imgs/3_1.png" alt="Ornament 1">
+            <img src="imgs/3_2.png" alt="Ornament 2">
+            <!-- 16:9 footage: a wider frame lets it run full height uncropped.
+                 The 5% zoom trims the thin bar along the bottom of the export. -->
+            <div class="video-wrapper"
+                 style="--video-frame-w: 16; --video-frame-h: 9; --video-zoom: 1.05"
+                 data-vimeo-id="1223069069" data-thumb="imgs/t/3-.jpg"></div>
+            <img src="imgs/3_3.png" alt="Ornament 3">
+            <img src="imgs/3_4.png" alt="Ornament 4">
+            <img src="imgs/3_5.png" alt="Ornament 5">
+            <img src="imgs/3_6.png" alt="Ornament 6">
+            <img src="imgs/3_7.png" alt="Ornament">
+            <img src="imgs/3_8.png" alt="Ornament">
+            <img src="imgs/3_9.png" alt="Ornament">
+          </div>
+        </div>
+        <div class="expt-label-row">
+          <h2 class="expt-label">Ornament</h2>
+        </div>
+        <div class="expt-text">
+          <p>Including the visual language of movement notation systems into strokes for typography. Combining the geometric Labanotation symbols with the organic Beauchamp-Feuillet notation system.</p>
+        </div>
+      </div>
+
+      <div class="expt" style="--i: 4">
+        <h2 class="expt-count">4</h2>
+        <div class="expt-tag">&lt;p&gt;&lt;/p&gt;</div>
+        <div class="expt-media img-scroll">
+          <div class="wrapper">
+            <img src="imgs/4_1.jpg" alt="Angle">
+          </div>
+        </div>
+        <div class="expt-label-row">
+          <h2 class="expt-label">Angle</h2>
+        </div>
+        <div class="expt-text">
+          <p>Shoulders offer a wide range of movement, and arms are a fixed length. I imagine the arm is akin to a composing stick in letterpress printing, and the shoulder controls rotation.</p>
+        </div>
+      </div>
+
+      <div class="expt" style="--i: 5">
+        <h2 class="expt-count">5</h2>
+        <div class="expt-tag">&lt;p&gt;&lt;/p&gt;</div>
+        <div class="expt-media img-scroll">
+          <div class="wrapper">
+            <img src="imgs/5-1.png" alt="Skew 1">
+            <img src="imgs/5-2.png" alt="Skew 2">
+            <img src="imgs/5-3.png" alt="Skew 3">
+          </div>
+        </div>
+        <div class="expt-label-row">
+          <h2 class="expt-label">Skew</h2>
+        </div>
+        <div class="expt-text">
+          <p>Creating spatial typography by rotating planes of a body.</p>
+        </div>
+      </div>
+
+      <div class="expt" style="--i: 6">
+        <h2 class="expt-count">6</h2>
+        <div class="expt-tag">&lt;a&gt;</div>
+        <div class="expt-media img-scroll">
+          <div class="wrapper">
+            <img src="imgs/6-1.png" alt="To Mold 1">
+            <img src="imgs/6-2.png" alt="To Mold 2">
+            <img src="imgs/6-3.png" alt="To Mold 3">
+            <img src="imgs/6-4.png" alt="To Mold 4">
+          </div>
+        </div>
+        <div class="expt-label-row">
+          <h2 class="expt-label">To Mold</h2>
+        </div>
+        <div class="expt-text">
+          <p>Hands type, hands swipe, hands click, hands press. The potential range of choreographies with computers for our hands are quite limited. I apply molding gestures to typographic form. Despite the continued immobilization of the spectator, I focus on the freedom in the movement quality itself.</p>
+        </div>
+      </div>
+
+      <div class="expt" style="--i: 7">
+        <h2 class="expt-count">7</h2>
+        <div class="expt-tag">&lt;a&gt;</div>
+        <div class="expt-media img-scroll">
+          <div class="wrapper">
+            <img src="imgs/7_2.png" alt="Contour_2">
+          </div>
+        </div>
+        <div class="expt-label-row">
+          <h2 class="expt-label">Contour_2</h2>
+        </div>
+        <div class="expt-text">
+          <p>Re-enacting a generated text prompt for choreography with the letter A. Machine-generated movement was read back into the machine, with only a moment of friction in my re-enactment. This in-between space has further potential but I did not see enough room for human expression.</p>
+        </div>
+      </div>
+
+      <div class="expt" style="--i: 8">
+        <h2 class="expt-count">8</h2>
+        <div class="expt-tag">&lt;a&gt;&lt;b&gt;</div>
+        <div class="expt-media img-scroll">
+          <div class="wrapper">
+            <img src="imgs/8-1.png" alt="Focus">
+            <img src="imgs/8-2.png" alt="Focus">
+            <img src="imgs/8-3.png" alt="Focus">
+          </div>
+        </div>
+        <div class="expt-label-row">
+          <h2 class="expt-label">Focus</h2>
+        </div>
+        <div class="expt-text">
+          <p>Eyes already share a history of interfacing with computers. Eye gaze tracking is an objective measure of hierarchy, efficiency and seamlessness in user interface testing. I subvert the typical position of eyes as followers and use eyes as initiators in this experiment. The layout is clear in the area of focus as other content on screen fades into the background.</p>
+        </div>
+      </div>
+
+      <div class="expt" style="--i: 9">
+        <h2 class="expt-count">9</h2>
+        <div class="expt-tag">&lt;p&gt;&lt;/p&gt;</div>
+        <div class="expt-media img-scroll">
+          <div class="wrapper">
+            <img src="imgs/9-1.jpg" alt="Tilt">
+            <img src="imgs/9-2.jpg" alt="Tilt">
+          </div>
+        </div>
+        <div class="expt-label-row">
+          <h2 class="expt-label">Tilt</h2>
+        </div>
+        <div class="expt-text">
+          <p>How may text be responsive to a person? Text tilting with the angle of one’s head both makes for easier reading and returns awareness to our bodies.</p>
+        </div>
+      </div>
+
+
+      <div class="expt" style="--i: 10">
+        <h2 class="expt-count">10</h2>
+        <div class="expt-tag">&lt;p&gt;&lt;/p&gt;</div>
+        <div class="expt-media img-scroll">
+          <div class="wrapper">
+            <img src="imgs/10-1.png" alt="Spacing">
+          </div>
+        </div>
+        <div class="expt-label-row">
+          <h2 class="expt-label">Spacing</h2>
+        </div>
+        <div class="expt-text">
+          <p>Footsteps denote a space between two feet at varying widths with a pre-defined maximum space. I connect this space to the space between letters. The width of a footstep may change the relative position of a character on the horizontal axis.</p>
+        </div>
+      </div>
+
+      <div class="expt" style="--i: 11">
+        <h2 class="expt-count">11</h2>
+        <div class="expt-tag">&lt;p&gt;&lt;/p&gt;</div>
+        <div class="expt-media img-scroll">
+          <div class="wrapper">
+            <img src="imgs/12-1.png" alt="Perspective 1">
+          </div>
+        </div>
+        <div class="expt-label-row">
+          <h2 class="expt-label">Perspective</h2>
+        </div>
+        <div class="expt-text">
+          <p>Often viewed from a bird’s-eye angle, computer vision footage has a hierarchical viewpoint with undertones of authority and domination. I use this camera angle to create the next experiment. The floor becomes a pseudo screen and I orient on a horizontal axis, performing choreographies about the floor. I am functionally invisible to the computer’s webcam.</p>
+        </div>
+      </div>
+
+      <div class="expt" style="--i: 12">
+        <h2 class="expt-count">12</h2>
+        <div class="expt-tag">&lt;a&gt;&lt;b&gt;&lt;c&gt;&lt;d&gt;&lt;e&gt;&lt;f&gt;&lt;g&gt;&lt;h&gt;</div>
+        <div class="expt-media img-scroll">
+          <div class="wrapper">
+            <img src="imgs/12_1.jpg" alt="To Mold_2 1">
+            <img src="imgs/12_2.jpg" alt="To Mold_2 2">
+            <img src="imgs/12_3.jpg" alt="To Mold_2 3">
+            <div class="video-wrapper"
+                 data-vimeo-id="1223984494" data-thumb="imgs/t/12_4.jpg"></div>
+            <img src="imgs/12_5.jpg" alt="To Mold_2 5">
+            <img src="imgs/12_6.jpg" alt="To Mold_2 6">
+            <img src="imgs/12_7.jpg" alt="To Mold_2 7">
+            <img src="imgs/12_8.jpg" alt="To Mold_2 8">
+            <img src="imgs/12_9.jpg" alt="To Mold_2 9">
+            <div class="video-wrapper"
+                 data-vimeo-id="1223984496" data-thumb="imgs/t/12_10.jpg"></div>
+            <div class="video-wrapper"
+                 data-vimeo-id="1223984493" data-thumb="imgs/t/12_11.jpg"></div>
+            <div class="video-wrapper"
+                 data-vimeo-id="1223984495" data-thumb="imgs/t/12_12.jpg"></div>
+          </div>
+        </div>
+        <div class="expt-label-row">
+          <h2 class="expt-label">To Mold_2</h2>
+        </div>
+        <div class="expt-text">
+          <p>Testing varying degrees of complexity and depth of the 3D forms. The typographic object inherits a corporeality despite its digitality. As their creation relies on performance, no two forms will ever look exactly the same.</p>
+        </div>
+      </div>
+
+    </div>
+
+
+    <p class="text-7"></p>
+    <div class="container" id="myContainer"></div>
+
+  </main>
+
+  </div>
+
+  <!-- <script src="sketch_001.js"></script> -->
+  <!-- load.js must run FIRST: it marks every embed data-vimeo-defer, and
+       player.js claims any unmarked [data-vimeo-id] the moment it executes.
+       The SDK is what lets stacked Vimeo layers be seeked, so a type layer can
+       be held in sync with the footage under it. -->
+  <!-- load.js first, and it has to stay that way: these scripts sit after the
+       videos, so player.js auto-embeds every [data-vimeo-id] already in the DOM
+       the moment it runs. load.js marks them deferred before that. window.Vimeo
+       is only read later, from the scroll observer, so it's there in time. -->
+  <script src="load.js"></script>
+  <script src="https://player.vimeo.com/api/player.js"></script>
+  </body>
+
+</html>
