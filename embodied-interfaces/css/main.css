@@ -16,6 +16,7 @@
 
   --title-cap-air: 10px;
   --header-top-row: calc(var(--title-cap-air) + 0.5 * var(--title-size));
+  --nav-hit-drop: 50px;
 
   --header-title-row: 2.5vh;
   --header-rows:
@@ -1013,6 +1014,15 @@ body.has-slideshow-cursor .img-scroll:not(.is-static) {
   padding-right: 1rem;
 }
 
+/* The top-line hugs the viewport edge and runs at line-height 0.5, so the
+   links' hit strip is only a few px tall. Vertical padding on an inline
+   element doesn't change the line box, so this deepens the pressable area
+   without moving any type. */
+.top-word a,
+.header .text-1 a {
+  padding-bottom: var(--nav-hit-drop);
+}
+
 .col-title {
   grid-row: 4 / 5;
   margin: 0;
@@ -1029,6 +1039,10 @@ body.has-slideshow-cursor .img-scroll:not(.is-static) {
 .header .filters {
   grid-column: 1 / 3;
   grid-row: 2 / 3;
+  /* Full-bleed row, but only the tags should catch clicks — its empty flanks
+     sit directly over the deepened Input/Output hit strips. Tags re-enable
+     pointer-events below. */
+  pointer-events: none;
   display: flex;
   flex-direction: column;
   justify-content: flex-end;
@@ -1067,6 +1081,7 @@ body.has-slideshow-cursor .img-scroll:not(.is-static) {
 .filters h3 {
   margin: 0;
   cursor: pointer;
+  pointer-events: auto;
 }
 
 .filters h3.is-active {
