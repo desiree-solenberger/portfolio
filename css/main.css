@@ -10,6 +10,12 @@
        url('../fonts/NewEdge666-LightRounded.woff') format('woff');
 } */
 
+html {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
 body {
   --arketa-size: 8.5pt;
   background: #FBF9F6;
@@ -261,6 +267,11 @@ a:hover {
 .page.process .caption-3 { grid-row: 22 / 23; }
 .page.process .p-3     { grid-row: 21 / 22; }
 .page.process .ig-6    { grid-row: 21 / 22; }
+
+/* right margin so the last word of a long title drops to its own line */
+.title-narrow {
+  max-width: 38ch;
+}
 
 .col2-block {
   display: block;
@@ -731,10 +742,10 @@ html.is-safari .slideshow .video-wrapper {
 
   /* Hide everything except slideshows and captions */
   .title-1, .title-2, .title-3, .title-4,
-  .title-5, .title-6, .title-7, .title-8 { display: none; }
+  .title-5, .title-6, .title-7, .title-8, .title-9 { display: none; }
 
   .p-1, .p-2, .p-3, .p-4,
-  .p-5, .p-6, .p-7, .p-8 { display: none; }
+  .p-5, .p-6, .p-7, .p-8, .p-9 { display: none; }
 
   .ig-1, .ig-2, .ig-3, .ig-4,
   .ig-5, .ig-6, .ig-7, .ig-8 { display: none; }
@@ -744,7 +755,7 @@ html.is-safari .slideshow .video-wrapper {
 
   /* Slideshows */
   .img-1, .img-2, .img-3, .img-4,
-  .img-5, .img-6, .img-7, .img-8 {
+  .img-5, .img-6, .img-7, .img-8, .img-9 {
     display: block;
     margin-left: 2%;
     margin-right: 2%;
@@ -785,18 +796,55 @@ html.is-safari .slideshow .video-wrapper {
     object-fit: contain;
   }
 
-  /* Slideshow: only show active slide */
-  .slideshow {
+  /* Slideshow: horizontal swipe strip, every slide rendered (so it's
+     already decoded) and snapped one at a time. Fixed 3:2 frame so the
+     page never jumps between slides. Selectors are prefixed with
+     "html .page" to override the desktop Safari rules (html.is-safari …). */
+  html .page .slideshow {
     position: relative;
+    display: flex;
     width: 100%;
+    height: auto;
+    aspect-ratio: 3 / 2;
+    overflow-x: auto;
+    overflow-y: hidden;
+    scroll-snap-type: x mandatory;
+    overscroll-behavior-x: contain;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    touch-action: pan-x pan-y;
+    -webkit-tap-highlight-color: transparent;
+    -webkit-user-select: none;
+    user-select: none;
+    contain: none;
+    transform: none;
+    -webkit-transform: none;
   }
 
-  .slideshow .slide {
-    display: none;
-  }
+  html .page .slideshow::-webkit-scrollbar { display: none; }
 
-  .slideshow .slide.active {
+  html .page .slideshow .slide,
+  html .page .slideshow .slide.active {
     display: block;
+    position: relative;
+    inset: auto;
+    flex: 0 0 100%;
+    width: 100%;
+    height: 100%;
+    opacity: 1;
+    pointer-events: auto;
+    z-index: auto;
+    scroll-snap-align: start;
+    scroll-snap-stop: always;
+  }
+
+  html .page .slideshow img,
+  html .page .slideshow .video-wrapper {
+    width: 100%;
+    height: 100%;
+    margin: 0;
+    object-fit: contain;
+    -webkit-user-drag: none;
   }
 
   /* Video wrapper sizing */

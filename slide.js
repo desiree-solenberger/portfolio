@@ -10,12 +10,18 @@ document.querySelectorAll('.desc-toggle').forEach(toggle => {
 const isSafari = /^((?!chrome|android|crios|fxios|edgios).)*safari/i.test(navigator.userAgent);
 if (isSafari) document.documentElement.classList.add('is-safari');
 const safariSlideLocks = new WeakSet();
+// phone layout (matches the MOBILE block in css/main.css)
+const mobileMQ = window.matchMedia('(max-width: 650px)');
 
 function moveSlide(slideshowId, direction) {
     const slideshow = document.getElementById(slideshowId);
     const slides = slideshow.querySelectorAll('.slide');
     let current = Array.from(slides).findIndex(s => s.classList.contains('active'));
     const next = (current + direction + slides.length) % slides.length;
+    if (mobileMQ.matches) {
+      moveSlideMobile(slideshow, slides, next, current);
+      return;
+    }
     if (isSafari) {
       moveSlideSafari(slideshow, slides, current, next);
       return;
@@ -35,7 +41,7 @@ function moveSlide(slideshowId, direction) {
     if (!img.getAttribute('src')) {
       img.src = source;
     }
-    return isSafari ? decodeSlideImg(img) : Promise.resolve();
+    return (isSafari || mobileMQ.matches) ? decodeSlideImg(img) : Promise.resolve();
   }
 
   function decodeSlideImg(img) {
@@ -116,6 +122,29 @@ function moveSlide(slideshowId, direction) {
     }
   }
 
+  // Mobile: slides sit side by side in a scroll-snap strip (see CSS), so a
+  // swipe is native scrolling. A tap scrolls to the next slide; the scroll
+  // listener below keeps .active and the counter in sync either way.
+  function moveSlideMobile(slideshow, slides, next, current) {
+    const width = slideshow.clientWidth;
+    const wrapping = Math.abs(next - current) > 1; // last -> first: jump, don't scroll past every slide
+    preloadNearbySlides(slideshow, next);
+    slideshow.scrollTo({ left: next * width, behavior: wrapping ? 'auto' : 'smooth' });
+  }
+
+  function syncMobileSlide(slideshow) {
+    const slides = slideshow.querySelectorAll('.slide');
+    const width = slideshow.clientWidth;
+    if (!width) return;
+    const index = Math.min(slides.length - 1, Math.max(0, Math.round(slideshow.scrollLeft / width)));
+    const current = Array.from(slides).findIndex(s => s.classList.contains('active'));
+    if (index === current) return;
+    if (current !== -1) slides[current].classList.remove('active');
+    slides[index].classList.add('active');
+    updateCounter(slideshow, index, slides.length);
+    preloadNearbySlides(slideshow, index);
+  }
+
   function waitForNextPaint(frames = 2) {
     return new Promise(resolve => {
       const step = () => {
@@ -154,12 +183,23 @@ function moveSlide(slideshowId, direction) {
     });
     slideshow.addEventListener('click', e => {
       if (e.target.closest('.slide-arrow')) return;
+      if (mobileMQ.matches) {
+        moveSlide(slideshow.id, 1); // tap anywhere = next; swipe right to go back
+        return;
+      }
       const isLeft = (e.clientX - slideshow.getBoundingClientRect().left) < slideshow.offsetWidth / 2;
       moveSlide(slideshow.id, isLeft ? -1 : 1);
     });
-    if (isSafari) {
+    let syncFrame = 0;
+    slideshow.addEventListener('scroll', () => {
+      if (!mobileMQ.matches) return;
+      cancelAnimationFrame(syncFrame);
+      syncFrame = requestAnimationFrame(() => syncMobileSlide(slideshow));
+    }, { passive: true });
+    if (isSafari || mobileMQ.matches) {
       const current = Array.from(slides).findIndex(s => s.classList.contains('active'));
       if (current !== -1) preloadNearbySlides(slideshow, current);
-      preloadSlideshowImages(slideshow);
+      // whole slideshow: Safari up front; mobile when it nears the viewport (observer above)
+      if (isSafari) preloadSlideshowImages(slideshow);
     }
   });
