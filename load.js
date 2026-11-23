@@ -1,5 +1,4 @@
 const videos = document.querySelectorAll('[data-vimeo-id]');
-const isMobile = window.matchMedia('(max-width: 650px)').matches;
 
 const thumbObserver = new IntersectionObserver((entries) => {
   entries.forEach(entry => {
@@ -20,8 +19,6 @@ function loadVimeo(video) {
   video.dataset.loaded = 'true';
 
   const vimeoId = video.dataset.vimeoId;
-  // on mobile just show the thumbnail, no iframe
-  if (isMobile) return;
 
   const iframe = document.createElement('iframe');
   iframe.src = `https://player.vimeo.com/video/${vimeoId}?autoplay=1&muted=1&loop=1&controls=0&background=1&playsinline=1`;
